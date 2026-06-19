@@ -2487,22 +2487,29 @@ function showAnnouncementPopup(message, senderName, senderRole) {
 
 			const banner = document.createElement('div'); 
 			banner.id = 'sos-banner-' + docId; 
-			banner.style.cssText = `position:fixed; top:0; left:0; right:0; z-index:99999; background:#e74c3c; color:white; padding:16px; text-align:center; font-weight:bold; box-shadow:0 4px 12px rgba(0,0,0,0.4); animation:slideDown 0.3s`;
+			banner.style.cssText = `position:fixed; top:0; left:0; right:0; bottom:0; z-index:99999; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; padding:24px; animation:fadeIn 0.2s ease`;
 
 			const typeText = alert.type === 'broadcast' ? 'ALERT' : 'SOS';
 			const msg = alert.message ? `<div style="margin:4px 0">${alert.message}</div>` : '';
 
 			banner.innerHTML = ` 
-			<div style="font-size:18px">${typeText} from ${alert.senderName} (${alert.senderId})</div>
-			${msg}
-			<div style="font-size:13px; opacity:0.9; margin:4px 0">${alert.address}</div>
-			<div style="margin-top:10px">
-			  <button onclick="acknowledgeSOS('${docId}')" style="padding:8px 16px; border:none; border-radius:8px; background:white; color:#e74c3c; font-weight:bold; margin-right:8px">Acknowledge</button> 
-			  <button onclick="openMap(${alert.lat}, ${alert.lng})" style="padding:8px 16px; border:none; border-radius:8px; background:white; color:#e74c3c; font-weight:bold">View Map</button> 
+			<div style="width:100%; max-width:360px; background:#e74c3c; color:white; padding:20px 16px; text-align:center; font-weight:bold; border-radius:16px; box-shadow:0 10px 40px rgba(0,0,0,0.4); animation:popIn 0.25s ease">
+			  <div style="font-size:18px">${typeText} from ${alert.senderName} (${alert.senderId})</div>
+			  ${msg}
+			  <div style="font-size:13px; opacity:0.9; margin:4px 0">${alert.address}</div>
+			  <div style="margin-top:10px">
+				<button onclick="acknowledgeSOS('${docId}')" style="padding:8px 16px; border:none; border-radius:8px; background:white; color:#e74c3c; font-weight:bold; margin-right:8px">Acknowledge</button> 
+				<button onclick="openMap(${alert.lat}, ${alert.lng})" style="padding:8px 16px; border:none; border-radius:8px; background:white; color:#e74c3c; font-weight:bold">View Map</button> 
+			  </div>
 			</div>
-			<style>@keyframes slideDown{from{transform:translateY(-100%)}to{transform:translateY(0)}}</style>
+<style>
+			  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+			  @keyframes popIn{from{opacity:0;transform:scale(0.92)}to{opacity:1;transform:scale(1)}}
+</style>
 			`; 
-			document.body.prepend(banner); 
+			// Tapping the backdrop (outside the card) also dismisses it
+			banner.addEventListener('click', function(e){ if(e.target === banner) banner.remove(); });
+			document.body.appendChild(banner); 
 			}
 
 			async function acknowledgeSOS(docId) {
