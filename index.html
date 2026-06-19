@@ -1728,15 +1728,20 @@ function showAnnouncementPopup(message, senderName, senderRole) {
 			setTimeout(refreshLocation, 1500);
 			saveStudentLocation(); // auto save student location
 
+			// Live student location list is visible to Admin/Instructor only
 			const role = localStorage.getItem('role');
 			const trackerCard = document.getElementById('studentTrackerCard');
 			if(window.studentTrackerRefreshInterval) clearInterval(window.studentTrackerRefreshInterval);
-			if(trackerCard && (role === 'admin' || role === 'instructor')) {
+			if(trackerCard) {
+			if(role === 'admin' || role === 'instructor') {
 			trackerCard.style.display = 'block';
 			setTimeout(trackStudents, 1000);
 			// Keep the list/markers fresh automatically without needing
 			// to tap "Refresh Locations" every time
 			window.studentTrackerRefreshInterval = setInterval(trackStudents, 15000);
+			} else {
+			trackerCard.style.display = 'none';
+			}
 			}
 			}, 100);
 			}
@@ -2904,14 +2909,18 @@ function showAnnouncementPopup(message, senderName, senderRole) {
 			initMap();
 			setTimeout(refreshLocation, 1500);
 
-			// Show student tracker card for admin/instructor only
+			// Live student location list is visible to Admin/Instructor only
 			const role = localStorage.getItem('role');
 			const trackerCard = document.getElementById('studentTrackerCard');
 			if(window.studentTrackerRefreshInterval) clearInterval(window.studentTrackerRefreshInterval);
-			if(trackerCard && (role === 'admin' || role === 'instructor')) {
+			if(trackerCard) {
+			if(role === 'admin' || role === 'instructor') {
 			trackerCard.style.display = 'block';
 			setTimeout(trackStudents, 1000);
 			window.studentTrackerRefreshInterval = setInterval(trackStudents, 15000);
+			} else {
+			trackerCard.style.display = 'none';
+			}
 			}
 			}, 100);
 			}
