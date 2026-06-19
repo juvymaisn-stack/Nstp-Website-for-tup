@@ -1,0 +1,2976 @@
+<!DOCTYPE html> 
+<html lang="en"> 
+  <head> 
+	<meta charset="UTF-8"> 
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+	<title>NSTP GPS Disaster Resilience</title> 
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style> 
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  html, body { height: auto; min-height: 100%; overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  body { background: #f5f2e8; color: #2d3a3a; }
+.screen { display: none; min-height: 100vh; padding: 24px; max-width: 480px; margin: 0 auto; padding-bottom: 90px; overflow-y: visible; }
+.screen.active { display: flex; flex-direction: column; }
+
+  #splash { justify-content: center; align-items: center; text-align: center; padding-bottom: 24px; }
+.logo { width: 160px; height: 160px; margin-bottom: 24px; }
+  h1 { font-size: 24px; font-weight: 700; text-align: center; line-height: 1.3; margin-bottom: 4px; }
+.tagline { color: #6b7a7a; font-size: 14px; }
+
+  #auth, #signup { justify-content: flex-start; padding-top: 60px; }
+.auth-logo { width: 100px; height: 100px; margin: 0 auto 20px; }
+.auth-title { font-size: 22px; font-weight: 700; text-align: center; line-height: 1.3; margin-bottom: 24px; }
+
+.role-tabs { display: flex; gap: 8px; margin-bottom: 24px; background: #e8e5d8; padding: 4px; border-radius: 12px; }
+.role-tab { flex: 1; padding: 10px; border: none; background: transparent; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; color: #6b7a7a; }
+.role-tab.active { background: white; color: #1a4d47; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+  input, select, textarea { width: 100%; padding: 14px 16px; border: 1px solid #d0d0d0; border-radius: 12px; background: #fff; font-size: 16px; margin-bottom: 12px; font-family: inherit; }
+.password-wrap { position: relative; }
+.eye { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 18px; color: #888; }
+
+.btn { width: 100%; padding: 15px; background: #1a4d47; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 8px; }
+.btn-danger { background: #e74c3c; }
+
+.link { text-align: center; margin: 16px 0; color: #2d3a3a; font-size: 14px; cursor: pointer; text-decoration: underline; }
+
+.gps-notice { display: flex; gap: 10px; align-items: flex-start; margin: 20px 0 12px; font-size: 14px; color: #444; }
+.gps-notice svg { width: 20px; height: 20px; flex-shrink: 0; margin-top: 2px; }
+
+.btn-gray { width: 100%; padding: 15px; background: #e0e0e0; color: #555; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; margin-bottom: 24px; }
+
+.privacy { font-size: 12px; color: #666; line-height: 1.5; }
+.privacy a { color: #1a4d47; text-decoration: none; font-weight: 600; }
+
+  /* DASHBOARD */
+  #dashboard { padding: 0; }
+.dashboard-header { padding: 24px; background: #1a4d47; color: white; }
+.dashboard-header h2 { font-size: 22px; margin-bottom: 4px; }
+.dashboard-header p { font-size: 14px; opacity: 0.9; }
+.dashboard-content { flex: 1; padding: 24px; }
+.card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+.card h3 { font-size: 18px; margin-bottom: 8px; color: #1a4d47; }
+.card p { font-size: 14px; color: #666; }
+
+  /* MAP */
+  #map { height: 300px; border-radius: 12px; margin-top: 12px; }
+
+  /* MODAL */
+.modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+.modal.active { display: flex; }
+.modal-content { background: white; border-radius: 16px; padding: 24px; width: 90%; max-width: 400px; }
+
+  /* BOTTOM NAV */
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e0e0e0; display: flex; padding: 8px 0; max-width: 480px; margin: 0 auto; }
+.nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px; cursor: pointer; color: #888; font-size: 12px; }
+.nav-item.active { color: #1a4d47; }
+.nav-icon { width: 24px; height: 24px; }
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.logout-btn {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.logout-btn:active {
+  background: #c0392b;
+  transform: scale(0.95);
+}
+.leaflet-control-locate {
+  background: white;
+  border-radius: 4px;
+  padding: 5px;
+  cursor: pointer;
+  font-size: 18px;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+}
+  #sosHistoryList table { width:100%; font-size:12px; }
+  #sosHistoryList th, #sosHistoryList td { padding:8px 4px; word-break:break-word; }
+  #sosHistoryList .location-col { max-width:120px; }
+  body {
+  background: #f5f4f0;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.card {
+  background: white;
+  border-radius: 20px;
+  padding: 18px 20px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  margin-bottom: 14px;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.card:active { transform: scale(0.98); }
+.card.static:active { transform: none; }
+
+.card h3 {
+  margin: 0 0 4px 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: #1a5c4d;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card p {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+}
+#globalMessages {
+  padding: 12px;
+  background: #f0f2f5;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.msg-row {
+  display: flex;
+  margin-bottom: 8px;
+  align-items: flex-end;
+}
+
+.msg-row.me {
+  justify-content: flex-end;
+}
+
+.msg-row.other {
+  justify-content: flex-start;
+}
+
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+
+.msg-content {
+  max-width: 70%;
+  display: flex;
+  flex-direction: column;
+}
+
+.sender-name {
+  font-size: 12px;
+  color: #65676b;
+  margin-bottom: 2px;
+  margin-left: 4px;
+}
+
+.bubble {
+  padding: 8px 12px;
+  border-radius: 18px;
+  font-size: 15px;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+.bubble.me {
+  background: #0084ff;
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.bubble.other {
+  background: white;
+  color: #050505;
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.msg-time {
+  font-size: 11px;
+  color: #65676b;
+  margin-top: 2px;
+  text-align: right;
+}
+
+.msg-row.other .msg-time {
+  text-align: left;
+  margin-left: 34px;
+}
+location-card {
+  margin-top: 16px;
+  padding: 14px 16px;
+  background: #E8F5E9; /* light green */
+  border-left: 4px solid #2E7D32; /* TUP green */
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.pin {
+  font-size: 22px;
+}
+
+.label {
+  font-size: 12px;
+  color: #555;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.address {
+  font-size: 16px;
+  color: #1B5E20;
+  font-weight: bold;
+  margin-top: 2px;
+}
+.screen { max-width: 100%; }
+.bottom-nav { max-width: 100%; }
+.bottom-nav {
+  padding-bottom: calc(8px + env(safe-area-inset-bottom));
+}
+.screen {
+  padding-bottom: calc(90px + env(safe-area-inset-bottom));
+}
+#map { height: 350px; }
+</style> 
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol@0.79.0/dist/L.Control.Locate.min.css" />
+	<script src="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol@0.79.0/dist/L.Control.Locate.min.js"></script>
+  </head> 
+  <body>
+	<!-- 1. SPLASH SCREEN -->
+	<div class="screen active" id="splash">
+	  <svg class="logo" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+		<circle cx="60" cy="60" r="60" fill="#1a4d47"/>
+		<path d="M60 30 C48 30 38 40 38 52 C38 70 60 95 60 95 C60 95 82 70 82 52 C82 40 72 30 60 30 Z" fill="#e8f5f0"/>
+		<circle cx="60" cy="52" r="10" fill="#1a4d47"/>
+		<path d="M50 68 L60 78 L70 68" stroke="#1a4d47" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+	  </svg>
+	  <h1>NSTP GPS-Enabled<br>Disaster Resilience App</h1>
+	  <p class="tagline">Developing NSTP Smart Resilience</p>
+	</div>
+
+	<!-- 2. LOGIN SCREEN -->
+	<div class="screen" id="auth">
+	  <svg class="auth-logo" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+		<circle cx="60" cy="60" r="60" fill="#1a4d47"/>
+		<path d="M60 30 C48 30 38 40 38 52 C38 70 60 95 60 95 C60 95 82 70 82 52 C82 40 72 30 60 30 Z" fill="#e8f5f0"/>
+		<circle cx="60" cy="52" r="10" fill="#1a4d47"/>
+		<path d="M50 68 L60 78 L70 68" stroke="#1a4d47" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+	  </svg>
+
+	  <h2 class="auth-title">NSTP GPS-Enabled<br>Disaster Resilience App</h2>
+
+	  <div class="role-tabs">
+		<button type="button" class="role-tab active" onclick="switchRole('student', this)">Student</button>
+		<button type="button" class="role-tab" onclick="switchRole('instructor', this)">Instructor</button>
+		<button type="button" class="role-tab" onclick="switchRole('admin', this)">Admin</button>
+	  </div>
+
+	  <form id="loginForm"> 
+		<input type="text" id="loginId" placeholder="Student ID" required> 
+		<div class="password-wrap"> 
+		  <input type="password" id="loginPwd" placeholder="Password" required> 
+		  <span class="eye" onclick="togglePwd('loginPwd')">
+			<svg id="eyeIcon-loginPwd" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+			  <circle cx="12" cy="12" r="3"/>
+			</svg>
+		  </span>
+		</div> 
+		<button type="submit" class="btn">Log In</button> 
+	  </form>
+
+	  <div class="link" onclick="alert('Forgot password flow next')">Forgot password?</div>
+	  <div class="link" onclick="showSignup()">Don't have an account? Sign Up</div>
+
+	  <div class="gps-notice">
+		<svg viewBox="0 0 24 24" fill="#1a4d47">
+		  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+		</svg>
+		<span>Location services are required for hazard mapping and monitoring.</span>
+	  </div>
+
+	  <button type="button" class="btn-gray" onclick="enableGPS()">Enable GPS</button>
+
+	  <p class="privacy">
+		Data Privacy Notice: By logging in, you consent to the collection and processing of your Student ID, location data, and activity information solely for NSTP monitoring, safety, community profiling, and disaster preparedness purposes, in accordance with RA 10175 (Data Privacy Act of 2012). Your information will be kept confidential and used only for authorized academic and safety operations. <a href="#">Learn More</a>
+	  </p>
+	</div>
+
+	<!-- 3. SIGNUP SCREEN --> 
+	<div class="screen" id="signup"> 
+	  <svg class="auth-logo" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"> 
+		<circle cx="60" cy="60" r="60" fill="#1a4d47"/> 
+		<path d="M60 30 C48 30 38 40 38 52 C38 70 60 95 60 95 C60 95 82 70 82 52 C82 40 72 30 60 30 Z" fill="#e8f5f0"/> 
+		<circle cx="60" cy="52" r="10" fill="#1a4d47"/> 
+		<path d="M50 68 L60 78 L70 68" stroke="#1a4d47" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/> 
+	  </svg> 
+	  <h2 class="auth-title">Create Account</h2> 
+	  <div class="role-tabs"> 
+		<button type="button" class="role-tab active" onclick="switchRole('student', this)">Student</button> 
+		<button type="button" class="role-tab" onclick="switchRole('instructor', this)">Instructor</button> 
+	  </div> 
+	  <form id="signupForm"> 
+
+		<!-- Campus dropdown - shows only for student -->
+		<div id="campusDiv" style="display:block; margin-bottom:12px">
+		  <select id="campusCode" required style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px">
+			<option value="">Select Campus</option>
+			<option value="ME">TUP Manila</option>
+			<option value="CA">TUP Cavite</option>
+			<option value="TB">TUP Taguig</option>
+			<option value="QC">TUP Quezon City</option>
+			<option value="VS">TUP Visayas</option>
+		  </select>
+		</div>
+
+		<!-- Split ID for student: YY + XXXXX -->
+		<div id="idSplit" style="display:flex; gap:8px; margin-bottom:12px">
+		  <input type="number" id="yearInput" placeholder="YY" maxlength="2" min="20" max="99" required
+			style="width:25%; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px">
+		  <span style="align-self:center; font-weight:bold">-</span>
+		  <input type="number" id="numInput" placeholder="XXXXX" maxlength="5" min="1" max="99999" required
+			style="width:70%; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:16px">
+		</div>
+
+		<!-- Single input for Instructor/Admin: **-**** -->
+		<input type="text" id="signupId" placeholder="Student ID" required>
+
+		<input type="text" id="signupName" placeholder="Full Name" required> 
+		<input type="email" id="signupEmail" placeholder="Email" required> 
+		<div class="password-wrap"> 
+		  <input type="password" id="signupPwd" placeholder="Password" required> 
+		  <span class="eye" onclick="togglePwd('signupPwd')">*****</span> 
+		</div> 
+		<div class="password-wrap"> 
+		  <input type="password" id="signupPwd2" placeholder="Confirm Password" required> 
+		  <span class="eye" onclick="togglePwd('signupPwd2')">*****</span> 
+		</div> 
+		<button type="submit" class="btn">Create Account</button> 
+	  </form> 
+	  <div class="link" onclick="showLogin()">Already have an account? Log In</div> 
+	</div>
+
+	<!-- 4. DASHBOARD -->
+	<div class="screen" id="dashboard">
+	  <div class="dashboard-header">
+		<div>
+		  <h2 id="welcomeName">Welcome, Student</h2>
+		  <p id="welcomeRole">Student Dashboard</p>
+		</div>
+		<button onclick="logout()" class="logout-btn">Logout</button>
+	  </div>
+
+	  <div class="dashboard-content" id="tabContent">
+		<!-- Default Map tab content -->
+		<div class="card">
+		  <h3>Community Map</h3>
+		  <p>View hazard zones and safe routes</p>
+		  <div id="map"></div>
+		</div>
+		<div class="card">
+		  <h3> Current Location</h3>
+		  <p id="locationText">GPS tracking active for attendance & monitoring</p>
+		</div>
+	  </div>
+	</div>
+
+	<!-- BOTTOM NAVIGATION -->
+	<nav class="bottom-nav" id="bottomNav" style="display:none">
+	  <div class="nav-item active" onclick="switchTab('map', this)">
+		<svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+		  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+		</svg>
+		<span>Map</span>
+	  </div>
+	  <div class="nav-item" onclick="switchTab('attendance', this)">
+		<svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+		  <path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/>
+		</svg>
+		<span>Attendance</span>
+	  </div>
+	  <div class="nav-item" onclick="switchTab('safety', this)">
+		<svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+		  <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+		</svg>
+		<span>Safety</span>
+	  </div>
+	  <div class="nav-item" onclick="switchTab('hazard', this)">
+		<svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+		  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 17h.01M12 11v4"/>
+		</svg>
+		<span>Hazard</span>
+	  </div>
+	  <div class="nav-item" onclick="switchTab('modules', this)">
+		<svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+		  <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 2-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8 12H9v-2h3v2zm6 0h-5v-2h5v2zm0-4h-8v-2h8v2z"/>
+		</svg>
+		<span>Modules</span>
+	  </div>
+	  <div class="nav-item" onclick="switchTab('messages', this)">
+		<svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+		  <path d="M20 2H4c-1.1 0-2 2-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+		</svg>
+		<span>Messages</span>
+	  </div>
+	</nav>
+
+	<!-- HAZARD REPORT MODAL -->
+	<div class="modal" id="hazardModal"> 
+	  <div class="modal-content"> 
+		<h3 style="margin-bottom:16px;color:#1a4d47">Report Hazard</h3> 
+		<select id="hazardType" required> 
+		  <option value="">Select hazard type</option> 
+		  <option value="Flood">Flood</option> 
+		  <option value="Fire">Fire</option> 
+		  <option value="Earthquake">Earthquake Damage</option> 
+		  <option value="Landslide">Landslide</option> 
+		  <option value="Other">Other</option> 
+		</select>
+		<textarea id="hazardDesc" placeholder="Describe the hazard..." rows="3"></textarea>
+		<p id="hazardLocationText" style="font-size:12px;color:#666;margin-bottom:8px">Location will be captured automatically</p>
+
+		<!-- Status message -->
+		<div id="hazardStatus" style="font-size:12px; color:#27ae60; margin-bottom:12px; min-height:16px"></div>
+
+		<button class="btn btn-danger" onclick="submitHazard()">Submit Report</button>
+		<button class="btn-gray" onclick="closeHazardModal()" style="margin-top:8px">Cancel</button>
+	  </div>
+	</div>
+
+	<!-- MODULES TAB CONTENT -->
+	<div id="modulesTab" style="display:none">
+	  <!-- Upload form - admin/instructor only -->
+	  <div id="uploadCard" style="background:white; border-radius:12px; padding:16px; margin-bottom:16px; display:none">
+		<h3 style="margin-top:0; color:#1a4d47"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a4d47" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px;flex-shrink:0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Upload New Unit</h3>
+		<p style="font-size:13px; color:#666; margin-bottom:12px">1. Upload PDF to Google Drive Ã¢ 2. Set "Anyone with link: Viewer" Ã¢ 3. Paste share link here</p>
+		<input type="text" id="unitTitle" placeholder="Unit Title e.g. Module 3: Flood Safety" style="width:100%; padding:10px; margin-bottom:8px; border:1px solid #ddd; border-radius:8px">
+		<textarea id="unitDesc" placeholder="Description" rows="2" style="width:100%; padding:10px; margin-bottom:8px; border:1px solid #ddd; border-radius:8px"></textarea>
+		<input type="text" id="unitLink" placeholder="Paste Google Drive Share Link" style="width:100%; padding:10px; margin-bottom:12px; border:1px solid #ddd; border-radius:8px">
+		<button onclick="addUnit()" style="width:100%; padding:12px; background:#1a4d47; color:white; border:none; border-radius:8px; font-weight:600">Add Unit</button>
+		<div id="unitStatus" style="margin-top:10px; font-size:13px; min-height:18px"></div>
+	  </div>
+
+	  <!-- Modules list with Drive embed -->
+	  <div id="modulesList">
+		<p style="text-align:center; opacity:0.6; padding:40px">Loading modules...</p>
+	  </div>
+	</div>
+
+	<!-- FIREBASE SDK -->
+	<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+	<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script> 
+<script> 
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyB6Y3vbiBl227joSfqzIR83yz09tO7pGrA",
+  authDomain: "gpstup-275d3.firebaseapp.com",
+  databaseURL: "https://gpstup-275d3-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "gpstup-275d3",
+  storageBucket: "gpstup-275d3.firebasestorage.app",
+  messagingSenderId: "609289205457",
+  appId: "1:609289205457:web:b10dad87bfc9afbbdb37f0",
+  measurementId: "G-HKMT0J0H31"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+let currentRole = 'student';
+let map, userMarker, userLat = 14.65, userLng = 121.03;
+let hazardMarkers = [];
+let tempMarker = null;
+let sosListenerStarted = false;
+let sosAudio = null;
+let flashlightStream = null;
+let flashlightOn = false;
+let userName = 'Guest';
+let userRole = 'student';
+let unsubGlobal = null;
+let unsubInstructor = null;
+window.attendanceMap = null;
+window.markers = {};
+window.pendingLat = null;
+window.pendingLng = null;
+window.pendingDocId = null;
+let unsubGroups = null;
+let unsubGroupMsgs = null;
+let currentGroupId = null;
+
+// Show button for students + load groups when Messages tab opens
+const oldSwitchTab = switchTab;
+switchTab = function(tab, btn) {
+  oldSwitchTab(tab, btn);
+  if(tab === 'messages') {
+    setTimeout(() => {
+      const role = localStorage.getItem('role');
+      const userId = localStorage.getItem('userId');
+      const createBtn = document.getElementById('createGCBtn');
+      const groupSection = document.getElementById('groupChatsSection');
+      // Hide entire GROUP CHATS section for admin and instructor
+      if(groupSection) groupSection.style.display = (role === 'admin' || role === 'instructor') ? 'none' : 'block';
+      if(createBtn) createBtn.style.display = role === 'student' ? 'block' : 'none';
+      if(role === 'student') loadGroupChats(userId);
+      // Show announcement send box for admin/instructor
+      const announceBox = document.getElementById('announceBannerBox');
+      if(announceBox) announceBox.style.display = (role === 'admin' || role === 'instructor') ? 'block' : 'none';
+    }, 200);
+  }
+}
+
+function openCreateGCModal() {
+  document.getElementById('createGCModal').style.display = 'flex';
+}
+
+function closeCreateGCModal() {
+  document.getElementById('createGCModal').style.display = 'none';
+  document.getElementById('gcName').value = '';
+  document.getElementById('gcMembers').value = '';
+}
+
+async function createGroupChat() {
+  const name = document.getElementById('gcName').value.trim();
+  const membersInput = document.getElementById('gcMembers').value.trim();
+  const creatorId = localStorage.getItem('userId');
+  const creatorName = localStorage.getItem('userName') || 'Student';
+
+  if(!name) return alert('Group name required');
+  if(!creatorId) return alert('Login first');
+
+  let members = [creatorId.toUpperCase()];
+  if(membersInput) {
+    members = members.concat(membersInput.split(',').map(id => id.trim().toUpperCase()));
+  }
+  members = [...new Set(members)];
+
+  try {
+    await db.collection('groupChats').add({
+      groupName: name,
+      members: members,
+      createdBy: creatorId,
+      createdByName: creatorName,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      lastMessage: 'Group created by ' + creatorName,
+      lastMessageTime: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    alert('Group created!');
+    closeCreateGCModal();
+  } catch(err) {
+    alert('Error: ' + err.message);
+  }
+}
+
+function loadGroupChats(userId) {
+  const listDiv = document.getElementById('groupChatsList');
+  if(!userId) return listDiv.innerHTML = '<p style="opacity:0.6; text-align:center; padding:20px">Please login first</p>';
+  
+  userId = userId.toUpperCase(); // force uppercase to match
+  console.log('Loading groups for:', userId);
+
+  if(unsubGroups) unsubGroups();
+
+  unsubGroups = db.collection('groupChats')
+  .where('members', 'array-contains', userId)
+  // .orderBy('lastMessageTime', 'desc') <-- removed for now
+  .onSnapshot(snapshot => {
+      console.log('Groups found:', snapshot.size);
+      
+      if(snapshot.empty) {
+        listDiv.innerHTML = '<p style="opacity:0.6; text-align:center; padding:20px">No groups yet. Tap + Create GC to start one</p>';
+        return;
+      }
+
+      // Sort manually since we removed orderBy
+      const docs = snapshot.docs.sort((a,b) => {
+        const ta = a.data().lastMessageTime?.toDate() || 0;
+        const tb = b.data().lastMessageTime?.toDate() || 0;
+        return tb - ta;
+      });
+
+      let html = '';
+      docs.forEach(doc => {
+        const g = doc.data();
+        const time = g.lastMessageTime? new Date(g.lastMessageTime.toDate()).toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'}) : '';
+        html += `
+        <div onclick="openGroupChat('${doc.id}')" style="background:white; padding:14px 20px; display:flex; align-items:center; gap:12px; border-bottom:1px solid #f0f0f0; cursor:pointer">
+          <div style="width:48px; height:48px; border-radius:50%; background:#10b981; display:flex; align-items:center; justify-content:center; font-size:16px; color:white; font-weight:600">
+            ${g.groupName.substring(0,2).toUpperCase()}
+          </div>
+          <div style="flex:1; min-width:0">
+            <div style="font-size:15px; font-weight:600; color:#1a1a1a">${g.groupName}</div>
+            <div style="font-size:13px; color:#6b7280; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">${g.lastMessage || 'No messages yet'}</div>
+          </div>
+          <div style="font-size:11px; color:#9ca3af">${time}</div>
+        </div>`;
+      });
+      listDiv.innerHTML = html;
+    }, error => {
+      console.error('Firestore query error:', error);
+      listDiv.innerHTML = '<p style="color:red; text-align:center; padding:20px">Error: '+error.message+'<br><br>Click the link in console to create index</p>';
+    });
+}
+
+// OPEN GROUP CHAT SCREEN
+function openGroupChat(groupId) {
+  currentGroupId = groupId;
+  document.getElementById('groupChatRoom').style.display = 'flex'; // changed from 'block' to 'flex'
+  document.getElementById('groupMessages').innerHTML = '<div style="text-align:center;color:#999;padding:20px">Loading...</div>';
+  
+  // Load group info
+  db.collection('groupChats').doc(groupId).get().then(doc => {
+    if(doc.exists) {
+      const g = doc.data();
+      document.getElementById('groupChatName').textContent = g.groupName;
+      document.getElementById('groupChatMembers').textContent = g.members.length + ' members';
+    }
+  }).catch(err => console.error(err));
+
+  loadGroupMessages(groupId);
+}
+
+function closeGroupChat() {
+  document.getElementById('groupChatRoom').style.display = 'none';
+  if(unsubGroupMsgs) unsubGroupMsgs();
+}
+
+// LOAD MESSAGES
+function loadGroupMessages(groupId) {
+  const box = document.getElementById('groupMessages');
+  const myName = localStorage.getItem('userName');
+
+  if(unsubGroupMsgs) unsubGroupMsgs();
+
+  unsubGroupMsgs = db.collection('groupChats').doc(groupId).collection('messages')
+  .orderBy('time', 'asc')
+  .onSnapshot(snap => {
+      let html = '';
+      let lastSender = null;
+
+      snap.forEach(doc => {
+        const m = doc.data();
+        if(!m.time) return;
+
+        const isMe = m.user === myName;
+        const time = m.time.toDate().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
+        const showName =!isMe && lastSender!== m.user;
+        lastSender = m.user;
+
+        html += `
+        <div style="display:flex; justify-content:${isMe? 'flex-end':'flex-start'}; margin-bottom:8px; gap:8px">
+          ${!isMe? `<div style="width:32px; height:32px; border-radius:50%; background:#3b82f6; display:flex; align-items:center; justify-content:center; color:white; font-size:12px; font-weight:600; flex-shrink:0">${m.user.charAt(0).toUpperCase()}</div>` : '<div style="width:32px"></div>'}
+          <div style="max-width:70%">
+            ${showName? `<div style="font-size:11px; color:#6b7280; margin-bottom:2px">${m.user}</div>` : ''}
+            <div style="padding:10px 14px; border-radius:18px; background:${isMe? '#10b981':'white'}; color:${isMe? 'white':'#1a1a1a'}; box-shadow:0 1px 2px rgba(0,0,0,0.1)">
+              <div style="font-size:14px; word-wrap:break-word">${m.text}</div>
+              <div style="font-size:10px; opacity:0.7; text-align:right; margin-top:2px">${time}</div>
+            </div>
+          </div>
+        </div>`;
+      });
+
+      box.innerHTML = html;
+      box.scrollTop = box.scrollHeight;
+    });
+}
+
+// SEND MESSAGE
+function sendGroupMsg() {
+  const input = document.getElementById('groupInput');
+  const text = input.value.trim();
+  if(!text ||!currentGroupId) return;
+
+  const userName = localStorage.getItem('userName');
+  const userId = localStorage.getItem('userId');
+
+  // Add message
+  db.collection('groupChats').doc(currentGroupId).collection('messages').add({
+    user: userName,
+    userId: userId,
+    text: text,
+    time: firebase.firestore.FieldValue.serverTimestamp()
+  });
+
+  // Update last message in group doc
+  db.collection('groupChats').doc(currentGroupId).update({
+    lastMessage: userName + ': ' + text,
+    lastMessageTime: firebase.firestore.FieldValue.serverTimestamp()
+  });
+
+  input.value = '';
+}
+
+// GLOBAL CHAT
+function openGlobalChat() {
+  userName = localStorage.getItem('userName') || localStorage.getItem('userId') || 'Guest';
+  document.getElementById('globalChatRoom').style.display = 'block';
+  document.getElementById('globalMessages').innerHTML = '<div style="text-align:center;color:#999;padding:20px">Loading...</div>';
+  loadGlobalMessages();
+}
+function closeGlobalChat() {
+  document.getElementById('globalChatRoom').style.display = 'none';
+  if(unsubGlobal) unsubGlobal();
+}
+function sendGlobalMsg() {
+  const input = document.getElementById('globalInput');
+  const text = input.value.trim();
+  if(!text) return;
+  userName = localStorage.getItem('userName') || localStorage.getItem('userId') || 'Guest';
+  firebase.firestore().collection('globalChat').add({
+    user: userName,
+    text: text,
+    time: firebase.firestore.FieldValue.serverTimestamp()
+  });
+  input.value = '';
+}
+function loadGlobalMessages() {
+  const box = document.getElementById('globalMessages');
+  userName = localStorage.getItem('userName') || localStorage.getItem('userId') || 'Guest';
+  unsubGlobal = firebase.firestore().collection('globalChat').orderBy('time', 'asc').onSnapshot(snap => {
+    let html = ''; let lastSender = null;
+    snap.forEach(doc => {
+      const m = doc.data(); if(!m.time) return;
+      const isMe = m.user === userName;
+      let t = m.time.toDate ? m.time.toDate().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'}) : new Date(m.time).toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
+      const initial = m.user ? m.user.charAt(0).toUpperCase() : '?';
+      const showName = !isMe && lastSender !== m.user;
+      lastSender = m.user;
+      html += `<div class="msg-row ${isMe ? 'me' : 'other'}">
+        ${!isMe ? `<div class="avatar" style="background:${getColor(m.user)}">${initial}</div>` : '<div style="width:34px"></div>'}
+        <div class="msg-content">
+          ${showName ? `<div class="sender-name">${m.user}</div>` : ''}
+          <div class="bubble ${isMe ? 'me' : 'other'}">${m.text}</div>
+          <div class="msg-time">${t}</div>
+        </div>
+      </div>`;
+    });
+    box.innerHTML = html || '<div style="text-align:center;color:#999;margin-top:50px">No messages yet</div>';
+    box.scrollTop = box.scrollHeight;
+    if(snap.size > 0) {
+      const last = snap.docs[snap.docs.length-1].data();
+      document.getElementById('lastGlobalMsg').textContent = last.user + ': ' + last.text;
+      document.getElementById('globalTime').textContent = 'now';
+    }
+  });
+}
+
+// INSTRUCTOR CHAT
+function openInstructorChat() {
+  const userName = localStorage.getItem('userName') || localStorage.getItem('userId') || 'Guest';
+  const userRole = localStorage.getItem('role') || 'student';
+  
+  document.getElementById('instructorChatRoom').style.display = 'flex';
+  
+  // Hide input for students
+  const inputBox = document.getElementById('instructorInputBox');
+  inputBox.style.display = (userRole === 'instructor' || userRole === 'admin') ? 'flex' : 'none';
+  
+  document.getElementById('instructorMessages').innerHTML = '<div style="text-align:center;color:#999;padding:20px">Loading...</div>';
+  loadInstructorMessages();
+}
+function closeInstructorChat() {
+  document.getElementById('instructorChatRoom').style.display = 'none';
+  if(unsubInstructor) unsubInstructor();
+}
+function sendInstructorMsg() {
+  const userName = localStorage.getItem('userName') || localStorage.getItem('userId') || 'Guest';
+  const userRole = localStorage.getItem('role') || 'student';
+
+  if(userRole!== 'instructor' && userRole!== 'admin') {
+    return alert('Only instructors can send announcements');
+  }
+
+  const input = document.getElementById('instructorInput');
+  const text = input.value.trim();
+  if(!text) return;
+
+  const msgData = {
+    user: userName,
+    role: userRole,
+    text: text,
+    time: firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  // 1. Save to Instructor Chat
+  firebase.firestore().collection('instructorChat').add(msgData);
+
+  // 2. ALSO save to Global Chat with [Instructor] tag
+  firebase.firestore().collection('globalChat').add({
+    user: userName + ' [Instructor]',
+    text: text,
+    time: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(() => {
+    input.value = '';
+  }).catch(err => {
+    alert('Error: ' + err.message);
+  });
+}
+function loadInstructorMessages() {
+  const box = document.getElementById('instructorMessages');
+  userName = localStorage.getItem('userName') || localStorage.getItem('userId') || 'Guest';
+  unsubInstructor = firebase.firestore().collection('instructorChat').orderBy('time', 'asc').onSnapshot(snap => {
+    let html = '';
+    snap.forEach(doc => {
+      const m = doc.data(); if(!m.time) return;
+      const isMe = m.user === userName;
+      let t = m.time.toDate ? m.time.toDate().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'}) : new Date(m.time).toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
+      html += `<div class="msg-row ${isMe ? 'me' : 'other'}">
+        ${!isMe ? `<div class="avatar" style="background:#1877f2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>` : '<div style="width:34px"></div>'}
+        <div class="msg-content">
+          ${!isMe ? `<div class="sender-name">${m.user} <span style="color:#1877f2;font-size:10px;font-weight:600"> INSTRUCTOR</span></div>` : ''}
+          <div class="bubble ${isMe ? 'me' : 'other'}" style="${!isMe ? 'border-left:3px solid #1877f2' : ''}">${m.text}</div>
+          <div class="msg-time">${t}</div>
+        </div>
+      </div>`;
+    });
+    box.innerHTML = html || '<div style="text-align:center;color:#999;margin-top:50px">No announcements yet</div>';
+    box.scrollTop = box.scrollHeight;
+    if(snap.size > 0) {
+      const last = snap.docs[snap.docs.length-1].data();
+      document.getElementById('lastInstructorMsg').textContent = last.text;
+      document.getElementById('instructorTime').textContent = 'now';
+    }
+  });
+}
+
+// ===== ANNOUNCEMENTS =====
+async function sendAnnouncement() {
+  const role = localStorage.getItem('role');
+  if(role !== 'admin' && role !== 'instructor') return alert('Only admin/instructor can send announcements');
+
+  const input = document.getElementById('announceInput');
+  const statusEl = document.getElementById('announceStatus');
+  const text = input ? input.value.trim() : '';
+  if(!text) { if(statusEl) statusEl.innerHTML = '<span style="color:#e74c3c">Please type an announcement</span>'; return; }
+
+  const senderName = localStorage.getItem('userName') || 'Instructor';
+  if(statusEl) statusEl.innerHTML = '<span style="color:#888">Sending...</span>';
+
+  try {
+    await db.collection('announcements').add({
+      message: text,
+      senderName: senderName,
+      senderRole: role,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      seen: false
+    });
+    if(input) input.value = '';
+    if(statusEl) {
+      statusEl.innerHTML = '<span style="color:#27ae60">&#10003; Announcement sent!</span>';
+      setTimeout(() => { if(statusEl) statusEl.innerHTML = ''; }, 2500);
+    }
+  } catch(err) {
+    if(statusEl) statusEl.innerHTML = '<span style="color:#e74c3c">Error: ' + err.message + '</span>';
+  }
+}
+
+function closeAnnouncePopup() {
+  const popup = document.getElementById('announcePopup');
+  if(popup) popup.style.display = 'none';
+}
+
+let announceListenerStarted = false;
+function listenAnnouncements() {
+  if(announceListenerStarted) return;
+  announceListenerStarted = true;
+
+  const seenKey = 'lastAnnounceSeen';
+  const lastSeen = parseInt(localStorage.getItem(seenKey) || '0');
+
+  db.collection('announcements')
+    .orderBy('timestamp', 'desc')
+    .limit(5)
+    .onSnapshot(snapshot => {
+      snapshot.docChanges().forEach(change => {
+        if(change.type !== 'added') return;
+        const data = change.doc.data();
+        if(!data.timestamp) return;
+        const ts = data.timestamp.toMillis ? data.timestamp.toMillis() : 0;
+        if(ts <= lastSeen) return;
+
+        // Skip showing to the sender
+        const myName = localStorage.getItem('userName');
+        if(data.senderName === myName) return;
+
+        localStorage.setItem(seenKey, ts.toString());
+        showAnnouncementPopup(data.message, data.senderName, data.senderRole);
+      });
+    });
+}
+
+function showAnnouncementPopup(message, senderName, senderRole) {
+  // Remove old popup if any
+  const old = document.getElementById('announcePopup');
+  if(old) old.remove();
+
+  const roleLabel = senderRole === 'admin' ? 'Admin' : 'Instructor';
+  const popup = document.createElement('div');
+  popup.id = 'announcePopup';
+  popup.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#1a4d47;color:white;padding:0;box-shadow:0 4px 20px rgba(0,0,0,0.4);animation:slideDown 0.3s ease';
+  popup.innerHTML = `
+    <div style="padding:14px 16px 12px 16px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <div style="background:rgba(255,255,255,0.2);border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="20" height="20" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        </div>
+        <div>
+          <div style="font-size:12px;opacity:0.8;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">${roleLabel} Announcement</div>
+          <div style="font-size:13px;font-weight:700">${senderName}</div>
+        </div>
+        <button onclick="closeAnnouncePopup()" style="margin-left:auto;background:rgba(255,255,255,0.2);border:none;color:white;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0">&#x2715;</button>
+      </div>
+      <div style="font-size:15px;line-height:1.5;padding:10px 12px;background:rgba(255,255,255,0.12);border-radius:8px;margin-bottom:10px">${message}</div>
+      <button onclick="closeAnnouncePopup()" style="width:100%;padding:9px;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);color:white;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Got it</button>
+    </div>
+	  <style>@keyframes slideDown{from{transform:translateY(-100%)}to{transform:translateY(0)}}</style>
+	  `;
+	  document.body.prepend(popup);
+
+	  // Auto-dismiss after 10 seconds
+	  setTimeout(closeAnnouncePopup, 10000);
+	  }
+	  // ===== END ANNOUNCEMENTS =====
+
+	  function getColor(name) {
+	  let hash = 0; for(let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+	  const colors = ['#1877f2', '#00c853', '#ff3b30', '#9c27b0', '#ff9800', '#795548', '#009688', '#e91e63'];
+	  return colors[Math.abs(hash) % colors.length];
+	  }
+
+	  // Enter key
+	  document.addEventListener('keydown', e => {
+	  if(e.key === 'Enter' && document.getElementById('globalInput') === document.activeElement) sendGlobalMsg();
+	  if(e.key === 'Enter' && document.getElementById('instructorInput') === document.activeElement) sendInstructorMsg();
+	  });
+
+	  // HELPER: Get exact address
+	  async function getAddress(lat, lng) { 
+	  try { 
+	  const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&email=your@email.com`
+	  ); 
+	  const data = await res.json(); 
+
+	  const a = data.address || {};
+	  const street = [a.house_number, a.road].filter(Boolean).join(' ');
+	  const brgy = a.suburb || a.barangay || a.village || '';
+	  const city = a.city || a.municipality || 'Manila';
+
+	  return [street, brgy, city].filter(Boolean).join(', ') || `${lat.toFixed(4)}, ${lng.toFixed(4)}`; 
+	  } catch { 
+	  return `${lat.toFixed(4)}, ${lng.toFixed(4)}`; 
+	  } 
+	  }
+
+	  // Usage in your dashboard:
+	  getAddress(14.56552, 120.99853).then(addr => {
+	  document.getElementById('addr-1').textContent = addr;
+	  // Output: "2543 Bautista Street, Barangay 762, Manila"
+	  });
+
+	  function showScreen(id) { 
+	  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
+	  document.getElementById(id).classList.add('active'); 
+	  document.getElementById('bottomNav').style.display = id === 'dashboard'? 'flex' : 'none'; 
+
+	  if(id === 'dashboard') {
+	  initMap();
+	  }
+
+	  if(id === 'safety') {
+	  const role = localStorage.getItem('role'); 
+	  const alertBtn = document.getElementById('alertAllBtn'); 
+	  if(alertBtn) { 
+	  alertBtn.style.display = (role === 'admin' || role === 'instructor') ? 'block' : 'none'; 
+	  }
+	  setTimeout(listenSOSAlerts, 500); // <- changed from initSOSListener
+	  }
+	  } 
+
+	  setTimeout(() => showScreen('auth'), 2000);
+
+	  function switchRole(role, btn) {
+	  currentRole = role;
+	  btn.parentElement.querySelectorAll('.role-tab').forEach(t => t.classList.remove('active'));
+	  btn.classList.add('active');
+	  const idInput = document.querySelector('#loginId, #signupId');
+	  if (idInput) {
+	  idInput.placeholder = role === 'student'? 'Student ID' : role === 'instructor'? 'Instructor ID' : 'Admin ID';
+	  }
+	  }
+
+	  function togglePwd(id) {
+	  const pwd = document.getElementById(id);
+	  pwd.type = pwd.type === 'password'? 'text' : 'password';
+	  }
+
+	  function showSignup() { showScreen('signup'); }
+	  function showLogin() { showScreen('auth'); }
+
+	  function enableGPS() { 
+	  navigator.geolocation.getCurrentPosition( 
+	  pos => { 
+      userLat = pos.coords.latitude; 
+      userLng = pos.coords.longitude; 
+      if(map) updateUserLocation(userLat, userLng);
+
+      // Custom success toast with check SVG
+      showGPSToast(true);
+	  }, 
+	  () => {
+      // Custom error toast  
+      showGPSToast(false);
+	  }
+	  ); 
+	  }
+
+	  function showGPSToast(success) {
+	  const toast = document.createElement('div');
+	  if (success) {
+	  toast.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px;flex-shrink:0">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+      GPS Enabled
+	  `;
+	  toast.style.background = '#27ae60';
+	  } else {
+	  toast.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px;flex-shrink:0">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="15" y1="9" x2="9" y2="15"/>
+        <line x1="9" y1="9" x2="15" y2="15"/>
+      </svg>
+      GPS Permission Denied
+	  `;
+	  toast.style.background = '#e74c3c';
+	  }
+	  toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);color:white;padding:12px 18px;border-radius:12px;z-index:9999;display:flex;align-items:center;box-shadow:0 4px 12px rgba(0,0,0,0.3);font-size:14px';
+	  document.body.appendChild(toast);
+	  setTimeout(() => toast.remove(), 3000);
+	  }
+	  function showToast(message, success) {
+	  const toast = document.createElement('div');
+	  toast.innerHTML = message;
+	  toast.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);color:white;padding:12px 18px;border-radius:12px;z-index:9999;display:flex;align-items:center;box-shadow:0 4px 12px rgba(0,0,0,0.3);font-size:14px;background:${success ? '#27ae60' : '#e74c3c'}`;
+	  document.body.appendChild(toast);
+	  setTimeout(() => toast.remove(), 3000);
+	  }
+	  function handleGPSDenied() {
+	  const locText = document.getElementById('locationText');
+	  if(locText) {
+	  locText.innerHTML = `Location blocked<br><small style="color:#e74c3c; cursor:pointer" onclick="refreshLocation()">Tap to retry / Enable GPS</small>`;
+	  }
+	  }
+	  async function initMap() {
+	  if(map) map.remove();
+	  window.map = L.map('map').setView([userLat, userLng], 14);
+
+	  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+	  attribution: 'ÃÃÂ© OpenStreetMap'
+	  }).addTo(window.map);
+
+	  let myLocationMarker; // track the marker so we don't spam pins
+
+	  L.Control.LocateButton = L.Control.extend({ 
+	  onAdd: function() { 
+	  const btn = L.DomUtil.create('button', 'leaflet-bar'); 
+
+	  // SVG locate icon instead of emoji
+	  btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a4d47" stroke-width="2">
+		<circle cx="12" cy="12" r="4"/>
+		<path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+	  </svg>`;
+
+	  btn.title = 'My Location'; 
+	  btn.style.cssText = 'background:white; width:34px; height:34px; border:none; cursor:pointer; border-radius:4px; display:flex; align-items:center; justify-content:center'; 
+
+	  btn.onclick = async () => { 
+      navigator.geolocation.getCurrentPosition(async pos => { 
+	  const lat = pos.coords.latitude; 
+	  const lng = pos.coords.longitude; 
+
+	  window.map.setView([lat, lng], 18); 
+
+	  // Get exact address
+	  const address = await getAddress(lat, lng);
+	  window.currentAddress = address; // save for Present button
+
+	  // Remove old marker, add new one
+	  if(myLocationMarker) window.map.removeLayer(myLocationMarker);
+
+	  myLocationMarker = L.marker([lat, lng]).addTo(window.map)
+	  .bindPopup(`<b><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;flex-shrink:0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>You are here</b><br>${address}`).openPopup();
+
+      }, err => {
+	  alert('GPS error: ' + err.message);
+      }, {enableHighAccuracy: true, timeout: 10000});
+	  }; 
+	  return btn; 
+	  } 
+	  }); 
+
+	  new L.Control.LocateButton({position: 'topright'}).addTo(window.map);
+
+	  // LOCATE ME BUTTON - top right corner of map
+	  L.control.locate({
+	  position: 'topright',
+	  drawCircle: true,
+	  follow: false,
+	  setView: true,
+	  keepCurrentZoomLevel: false,
+	  markerStyle: {
+      weight: 3,
+      opacity: 0.8,
+      fillOpacity: 0.4
+	  },
+	  circleStyle: {
+      weight: 2,
+      color: '#1a4d47',
+      fillColor: '#1a4d47',
+      fillOpacity: 0.2
+	  },
+	  strings: {
+      title: "Show my location",
+      popup: "You are here"
+	  }
+	  }).addTo(map);
+
+
+
+	  loadHazards();
+
+	  navigator.geolocation.getCurrentPosition(
+	  pos => {
+      userLat = pos.coords.latitude;
+      userLng = pos.coords.longitude;
+      updateUserLocation(userLat, userLng);
+	  },
+	  () => document.getElementById('locationText').textContent = 'Location access denied'
+	  );
+	  }
+	  function refreshLocation() {
+	  const locText = document.getElementById('locationText');
+	  if(!locText) return;
+
+	  if(!navigator.geolocation) {
+	  locText.innerHTML = 'GPS not supported<br><small style="color:#e74c3c">Use Chrome browser</small>';
+	  return;
+	  }
+
+	  locText.innerHTML = 'Getting location...';
+
+	  navigator.geolocation.getCurrentPosition(
+	  async pos => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      locText.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;flex-shrink:0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Getting address...';
+
+      const address = await getAddress(lat, lng);
+      locText.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;flex-shrink:0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>' + address + '<br><small style="color:#27ae60">GPS active</small>';
+
+      // Center map if exists
+      if(window.map) {
+	  window.map.setView([lat, lng], 15);
+	  L.marker([lat, lng]).addTo(window.map).bindPopup(address);
+      }
+	  },
+	  err => {
+      if(err.code === 1) {
+	  locText.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;flex-shrink:0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Location blocked<br><small style="color:#e74c3c">Tap lock icon Ã¢ Site settings Ã¢ Location: Allow</small><br><small style="cursor:pointer; color:#1a4d47" onclick="location.reload()">Tap to reload</small>';
+      } else {
+	  locText.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;flex-shrink:0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>GPS error<br><small style="color:#e74c3c">Turn on location/GPS</small>';
+      }
+	  },
+	  {enableHighAccuracy: true, timeout: 10000}
+	  );
+	  }
+
+	  async function updateUserLocation(lat, lng) {
+	  if(userMarker) map.removeLayer(userMarker);
+	  userMarker = L.marker([lat, lng]).addTo(map).bindPopup('Your Location').openPopup();
+	  map.setView([lat, lng], 15);
+
+	  const locText = document.getElementById('locationText');
+	  if(locText) locText.textContent = 'Getting address...';
+
+	  const address = await getAddress(lat, lng);
+	  userMarker.setPopupContent(`<b>Your Location</b><br>${address}`).openPopup();
+	  if(locText) locText.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;flex-shrink:0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${address}<br><small style="opacity:0.7">Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}</small>`;
+	  }
+
+	  function loadHazards() {
+	  hazardMarkers.forEach(m => map.removeLayer(m));
+	  hazardMarkers = [];
+
+	  db.collection('hazards').orderBy('timestamp', 'desc').limit(50).get().then(snapshot => {
+	  snapshot.forEach(doc => {
+      const h = doc.data();
+      const colors = {Flood: 'blue', Fire: 'red', Earthquake: 'orange', Landslide: 'brown', Other: 'purple'};
+      const marker = L.circle([h.lat, h.lng], {
+	  radius: 200,
+	  color: colors[h.type] || 'red',
+	  fillColor: colors[h.type] || '#f03',
+	  fillOpacity: 0.4
+      }).bindPopup(`<b>${h.type}</b><br>${h.description || 'No description'}<br><small>${h.address || 'No address'}</small>`).addTo(map);
+      hazardMarkers.push(marker);
+	  });
+	  });
+	  }
+
+	  // HAZARD REPORT
+	  function openHazardModal() {
+	  document.getElementById('hazardModal').classList.add('active');
+	  }
+	  function closeHazardModal() {
+	  document.getElementById('hazardModal').classList.remove('active');
+	  document.getElementById('hazardType').value = '';
+	  document.getElementById('hazardDesc').value = '';
+	  document.getElementById('hazardLocationText').innerHTML = 'Location will be captured automatically';
+	  // Clear any tapped pin state
+	  window.tapLat = null;
+	  window.tapLng = null;
+	  window.tapAddress = null;
+	  if(tempMarker) { map.removeLayer(tempMarker); tempMarker = null; }
+	  }
+
+	  async function reportFromTap(lat, lng, address) {
+	  window.tapLat = lat;
+	  window.tapLng = lng;
+	  window.tapAddress = address;
+	  map.closePopup();
+	  openHazardModal();
+	  document.getElementById('hazardLocationText').innerHTML = `Location: <b>${address}</b>`;
+	  }
+
+	  async function submitHazard() {
+	  const type = document.getElementById('hazardType').value;
+	  const desc = document.getElementById('hazardDesc').value.trim();
+	  const statusEl = document.getElementById('hazardStatus');
+
+	  if(!type) return alert('Please select hazard type');
+
+	  statusEl.innerHTML = 'Sending...';
+
+	  const userId = localStorage.getItem('userId');
+	  const userName = localStorage.getItem('userName') || userId;
+
+	  // Use tapped pin location if available, otherwise fall back to GPS
+	  if(window.tapLat && window.tapLng) {
+	  try {
+      const lat = window.tapLat;
+      const lng = window.tapLng;
+      const address = window.tapAddress || await getAddress(lat, lng);
+
+      await db.collection('hazards').add({
+	  type: type,
+	  description: desc,
+	  reporterId: userId,
+	  reporterName: userName,
+	  lat: lat,
+	  lng: lng,
+	  address: address,
+	  timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+	  status: 'pending'
+      });
+
+      // Clear tap state
+      window.tapLat = null;
+      window.tapLng = null;
+      window.tapAddress = null;
+
+      statusEl.style.color = '#27ae60';
+      statusEl.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#27ae60" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg>Hazard reported successfully!';
+
+      setTimeout(() => {
+	  closeHazardModal();
+	  statusEl.innerHTML = '';
+	  document.getElementById('hazardType').value = '';
+	  document.getElementById('hazardDesc').value = '';
+	  if(tempMarker) { map.removeLayer(tempMarker); tempMarker = null; }
+	  loadHazards();
+      }, 1500);
+
+	  } catch(err) {
+      console.error('Hazard error:', err);
+      statusEl.style.color = '#e74c3c';
+      statusEl.innerHTML = 'Error: ' + err.message;
+	  }
+	  } else {
+	  // No pin tapped Ã¢ fall back to live GPS
+	  navigator.geolocation.getCurrentPosition(async pos => {
+      try {
+	  const lat = pos.coords.latitude;
+	  const lng = pos.coords.longitude;
+	  const address = await getAddress(lat, lng);
+
+	  await db.collection('hazards').add({
+	  type: type,
+	  description: desc,
+	  reporterId: userId,
+	  reporterName: userName,
+	  lat: lat,
+	  lng: lng,
+	  address: address,
+	  timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+	  status: 'pending'
+	  });
+
+	  statusEl.style.color = '#27ae60';
+	  statusEl.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#27ae60" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg>Hazard reported successfully!';
+
+	  setTimeout(() => {
+	  closeHazardModal();
+	  statusEl.innerHTML = '';
+	  document.getElementById('hazardType').value = '';
+	  document.getElementById('hazardDesc').value = '';
+	  loadHazards();
+	  }, 1500);
+
+      } catch(err) {
+	  console.error('Hazard error:', err);
+	  statusEl.style.color = '#e74c3c';
+	  statusEl.innerHTML = 'Error: ' + err.message;
+      }
+	  }, () => {
+      statusEl.style.color = '#e74c3c';
+      statusEl.innerHTML = 'Enable GPS first or tap the map to pin a location';
+	  });
+	  }
+	  }
+
+	  // SAFETY TAB HTML
+	  const safetyHTML = ` 
+	  <div class="safety-screen" style="background:#e74c3c; min-height:calc(100vh - 180px); padding:24px; border-radius:20px; color:#fff; text-align:center">
+		<h2 style="margin-bottom:20px; font-size:24px; font-weight:700">Safety Monitoring</h2>
+
+		<div style="background:rgba(255,255,255,0.2); padding:16px; border-radius:16px; margin-bottom:30px">
+		  <h3 style="margin:0 0 4px 0; font-size:18px; font-weight:600">Emergency Hotlines</h3>
+		  <p style="margin:0 0 12px 0; font-size:13px; opacity:0.8">Tap to auto-call</p>
+
+		  <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; text-align:center">
+			<a href="tel:911" style="cursor:pointer; background:rgba(255,255,255,0.15); padding:12px; border-radius:12px; text-decoration:none; color:white; display:block">
+			  <div style="font-size:28px; font-weight:700">911</div>
+			  <div style="font-size:12px; opacity:0.9">PNP Emergency</div>
+			</a>
+
+			<a href="tel:110" style="cursor:pointer; background:rgba(255,255,255,0.15); padding:12px; border-radius:12px; text-decoration:none; color:white; display:block">
+			  <div style="font-size:28px; font-weight:700">110</div>
+			  <div style="font-size:12px; opacity:0.9">Police Hotline</div>
+			</a>
+
+			<a href="tel:912" style="cursor:pointer; background:rgba(255,255,255,0.15); padding:12px; border-radius:12px; text-decoration:none; color:white; display:block">
+			  <div style="font-size:28px; font-weight:700">912</div>
+			  <div style="font-size:12px; opacity:0.9">Medical Emergency</div>
+			</a>
+
+			<a href="tel:117" style="cursor:pointer; background:rgba(255,255,255,0.15); padding:12px; border-radius:12px; text-decoration:none; color:white; display:block">
+			  <div style="font-size:28px; font-weight:700">117</div>
+			  <div style="font-size:12px; opacity:0.9">NDRRMC Hotline</div>
+			</a>
+		  </div>
+		</div>
+
+		<button onclick="sendSOS()" style="width:180px; height:180px; border-radius:50%; background:#fff; color:#e74c3c; font-size:48px; font-weight:900; border:none; box-shadow:0 0 40px rgba(255,255,255,0.6); margin:20px auto; display:block; cursor:pointer">SOS</button>
+
+		<!-- ALERT BUTTON FOR ADMIN/INSTRUCTOR -->
+		<button id="alertAllBtn" onclick="sendAlertAll()" style="display:block; width:100%; max-width:300px; padding:14px; margin:15px auto 25px auto; background:#3498db; color:white; border:none; border-radius:12px; font-weight:bold; font-size:16px; box-shadow:0 4px 12px rgba(0,0,0,0.2); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px">
+		  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+			<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+			<path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+		  </svg>
+		  Send Alert to All Users
+		</button>
+
+		<div id="sosHistoryCard" style="display:none; margin:20px -20px 0 -20px; background:white; border-radius:0; padding:16px 12px; box-shadow:0 -2px 8px rgba(0,0,0,0.1)">
+		  <h3 style="margin:0 0 12px 0; font-size:15px; color:#000"> SOS History</h3>
+		  <div id="sosHistoryList" style="max-height:300px; overflow-y:auto; -webkit-overflow-scrolling:touch"></div>
+		</div>
+
+		<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:20px; background:rgba(255,255,255,0.2); padding:16px; border-radius:16px"> 
+		  <div onclick="openHazardModal()" style="cursor:pointer; text-align:center; color:white">
+			<div style="width:32px;height:32px;margin:0 auto 4px">
+			  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+				<line x1="12" y1="9" x2="12" y2="13"/>
+				<line x1="12" y1="17" x2="12.01" y2="17"/>
+			  </svg>
+			</div>
+			<div style="font-size:12px">Hazard<br>Report</div>
+		  </div> 
+
+		  <div onclick="alert('First Aid Guide coming soon')" style="cursor:pointer; text-align:center; color:white">
+			<div style="width:32px;height:32px;margin:0 auto 4px">
+			  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+				<polyline points="22 4 12 14.01 9 11.01"/>
+				<path d="M12 6v6l4 2"/>
+			  </svg>
+			</div>
+			<div style="font-size:12px">First<br>Aid</div>
+		  </div> 
+
+		  <div onclick="toggleFlashlight()" style="cursor:pointer; text-align:center; color:white">
+			<div style="width:32px;height:32px;margin:0 auto 4px">
+			  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+				<circle cx="12" cy="12" r="3"/>
+			  </svg>
+			</div>
+			<div style="font-size:12px">Flashlight</div>
+		  </div> 
+
+		  <div onclick="shareLocation()" style="cursor:pointer; text-align:center; color:white">
+			<div style="width:32px;height:32px;margin:0 auto 4px">
+			  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+				<circle cx="12" cy="10" r="3"/>
+			  </svg>
+			</div>
+			<div style="font-size:12px">Share<br>Location</div>
+		  </div> 
+		</div>
+	  </div>`;
+
+	  // Tab content
+	  const tabData = {
+	  map: `<div class="card static" style="cursor:default"><h3>Community Map</h3><p>View hazard zones and safe routes</p><div id="map"></div></div><div id="studentTrackerCard" class="card static" style="display:none;cursor:default"><h3>Locations</h3><p style="font-size:13px; color:#666; margin-bottom:12px">Live GPS </p><button onclick="trackStudents()" class="btn" style="background:#1a4d47; margin-bottom:12px">Refresh Locations</button><div id="studentList" style="max-height:250px; overflow-y:auto"></div></div><div class="card" onclick="refreshLocation()" style="cursor:pointer"><h3>
+		  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a4d47" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px">
+			<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+			<circle cx="12" cy="10" r="3"/>
+		  </svg>
+		  Current Location</h3><p id="locationText">GPS tracking active for attendance & monitoring<br><small style="color:#1a4d47">Tap to refresh</small></p></div>`,
+	  attendance: '<div class="card"><h3> Attendance</h3><p>Tap once to mark present for today.</p></div><button id="markAttendanceBtn" class="btn" onclick="markAttendance()">Mark Present</button><div id="attendanceStatus" style="margin-top:12px; font-size:13px; color:#27ae60"></div><div id="attendanceListCard" class="card" style="display:none; margin-top:16px"><h3> Today\'s Check-ins</h3><p id="attendanceCount" style="opacity:0.7; margin-bottom:12px">Loading...</p><div id="attendanceList" style="max-height:300px; overflow-y:auto"></div></div>',
+
+	  safety: safetyHTML,
+	  hazard: `<div class="card static" style="cursor:default">
+		<h3 style="color:#e74c3c">
+		  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+		  Report Hazard
+		</h3>
+		<p style="font-size:13px;color:#666;margin-bottom:12px">Tap the map to pin the hazard location, or submit to use your GPS.</p>
+
+		<div id="hazardReportMap" style="height:220px;border-radius:12px;margin-bottom:12px;border:1px solid #e0e0e0"></div>
+
+		<select id="hazardType" style="width:100%;padding:14px 16px;border:1px solid #d0d0d0;border-radius:12px;background:#fff;font-size:16px;margin-bottom:12px;font-family:inherit">
+		  <option value="">Select hazard type</option>
+		  <option value="Flood">Ã° Flood</option>
+		  <option value="Fire">Ã°Â¥ Fire</option>
+		  <option value="Earthquake">Ã°Ã¯Â¸ Earthquake Damage</option>
+		  <option value="Landslide">Ã¢Â°Ã¯Â¸ Landslide</option>
+		  <option value="Other">Ã¢Â Ã¯Â¸ Other</option>
+		</select>
+
+		<textarea id="hazardDesc" placeholder="Describe the hazard..." rows="3" style="width:100%;padding:14px 16px;border:1px solid #d0d0d0;border-radius:12px;background:#fff;font-size:16px;margin-bottom:12px;font-family:inherit;resize:vertical;box-sizing:border-box"></textarea>
+
+		<div id="hazardLocationText" style="font-size:13px;color:#555;background:#f0f8f5;border:1px solid #c8e6c9;padding:10px 14px;border-radius:10px;margin-bottom:12px">
+		  Ã° Tap the map above to pin a location, or your GPS will be used
+		</div>
+
+		<div id="hazardStatus" style="font-size:13px;color:#27ae60;margin-bottom:12px;min-height:18px"></div>
+
+		<button onclick="submitHazardTab()" style="width:100%;padding:15px;background:#e74c3c;color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer">
+		  Submit Hazard Report
+		</button>
+	  </div>
+
+	  <div id="myHazardHistoryCard" class="card static" style="margin-top:4px;cursor:default">
+		<h3 style="color:#1a4d47">My Reports</h3>
+		<p style="font-size:13px;color:#666;margin-bottom:12px">Your submitted hazard reports</p>
+		<div id="myHazardHistoryList" style="max-height:400px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:2px"><p style="opacity:0.6;text-align:center;padding:20px">Loading...</p></div>
+	  </div>
+
+	  <div id="hazardHistoryCard" class="card static" style="display:none;cursor:default">
+		<h3>Hazard Report History</h3>
+		<p style="font-size:13px; color:#666; margin-bottom:12px">Recent reports from the community</p>
+		<div id="hazardHistoryList" style="max-height:600px; overflow-y:auto; -webkit-overflow-scrolling:touch; padding-right:2px"></div>
+	  </div>`,
+	  modules: '<div class="card"><h3>NSTP2 Modules</h3><p style="font-size:13px; color:#666; margin-bottom:16px">Course materials below, via Google Drive.</p><div id="uploadForm" style="display:none; border-top:1px solid #eee; padding-top:16px; margin-top:16px"><h4 style="margin:0 0 12px 0; color:#1a4d47">Add New Unit</h4><input type="text" id="unitTitle" placeholder="Unit Title e.g. Module 3: Flood Safety" style="width:100%; padding:10px; margin-bottom:8px; border:1px solid #ddd; border-radius:8px"><textarea id="unitDesc" placeholder="Description" rows="2" style="width:100%; padding:10px; margin-bottom:8px; border:1px solid #ddd; border-radius:8px"></textarea><input type="text" id="unitLink" placeholder="Paste Google Drive Share Link" style="width:100%; padding:10px; margin-bottom:12px; border:1px solid #ddd; border-radius:8px"><button onclick="addUnit()" style="width:100%; padding:12px; background:#1a4d47; color:white; border:none; border-radius:8px; font-weight:600; margin-bottom:16px">Add Unit</button><div id="unitStatus" style="margin-bottom:16px; font-size:13px; min-height:18px"></div><div style="background:#f7faf9; padding:12px; border-radius:8px; border:1px dashed #1a4d47"><h5 style="margin:0 0 8px 0; font-size:13px; color:#1a4d47"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;flex-shrink:0"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>Activity Section - attach to last unit</h5><input type="text" id="activityTitle" placeholder="Activity Title e.g. Quiz 1, Assignment 1" style="width:100%; padding:10px; margin-bottom:8px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box"><textarea id="activityDesc" placeholder="Activity Instructions / Directions" rows="3" style="width:100%; padding:10px; margin-bottom:8px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box; resize:vertical"></textarea><input type="url" id="activityLink" placeholder="Activity Link e.g. Google Form, PDF, YouTube" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box"><button onclick="addActivity()" style="width:100%; padding:12px; background:#d97706; color:white; border:none; border-radius:8px; font-weight:600">Add Activity</button><div id="activityStatus" style="margin-top:8px; font-size:13px; min-height:18px"></div></div></div><div id="modulesList" style="margin-top:16px"><p style="opacity:0.6; text-align:center; padding:20px">Loading modules...</p></div></div>',
+	  messages: `<div style="padding: 0; background: #f5f4f0; min-height: calc(100vh - 180px)">
+
+		<!-- ANNOUNCEMENT SEND BOX (admin/instructor only - shown by JS) -->
+		<div id="announceBannerBox" style="display:none; padding:14px 16px; background:#fff3cd; border-left:4px solid #f59e0b; margin:12px 16px; border-radius:10px">
+		  <div style="font-size:13px; font-weight:700; color:#92400e; display:flex; align-items:center; gap:6px; margin-bottom:8px">
+			<svg width="16" height="16" fill="#92400e" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+			Send Announcement to All Students
+		  </div>
+		  <textarea id="announceInput" placeholder="Type your announcement..." rows="3"
+			style="width:100%; padding:10px 12px; border:1px solid #f59e0b; border-radius:8px; font-size:14px; resize:none; box-sizing:border-box; outline:none; background:#fffbeb; font-family:inherit"></textarea>
+		  <button onclick="sendAnnouncement()"
+			style="margin-top:8px; width:100%; padding:11px; background:#f59e0b; color:white; border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px">
+			<svg width="16" height="16" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>
+			Send to All Students
+		  </button>
+		  <div id="announceStatus" style="font-size:12px; min-height:16px; margin-top:6px; text-align:center"></div>
+		</div>
+
+		<!-- Global Chats Section -->
+		<div style="padding: 16px 20px 8px 20px">
+		  <div style="font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px">Global Chats</div>
+		</div>
+
+		<!-- Global Chat Room -->
+		<div onclick="openGlobalChat()" style="background: white; padding: 14px 20px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #f0f0f0; cursor: pointer">
+		  <div style="width: 48px; height: 48px; border-radius: 50%; background: #1a5c4d; display: flex; align-items: center; justify-content: center">
+			<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			  <circle cx="12" cy="12" r="10"/>
+			  <line x1="2" y1="12" x2="22" y2="12"/>
+			  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+			</svg>
+		  </div>
+		  <div style="flex: 1; min-width: 0">
+			<div style="font-size: 15px; font-weight: 600; color: #1a1a1a">Global Chat</div>
+			<div id="lastGlobalMsg" style="font-size: 13px; color: #6b7280; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">Tap to join</div>
+		  </div>
+		  <div style="font-size: 11px; color: #9ca3af" id="globalTime"></div>
+		</div>
+		<!-- Groups Chats Section - hidden for admin/instructor, shown only for students -->
+		<div id="groupChatsSection">
+		  <div style="padding: 24px 20px 8px 20px; display:flex; justify-content:space-between; align-items:center">
+			<div style="font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px">Groups Chats</div>
+			<div id="createGCBtn" onclick="openCreateGCModal()" style="display:none; background:#10b981; color:white; padding:6px 12px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer">+ Create GC</div>
+		  </div>
+
+		  <!-- CREATE GC MODAL -->
+		  <div id="createGCModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center">
+			<div style="background:white; border-radius:16px; padding:20px; width:90%; max-width:350px">
+			  <h3 style="margin:0 0 16px 0; color:#1a5c4d">Create Group Chat</h3>
+			  <input id="gcName" type="text" placeholder="Group Name e.g. BSIT 3A" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; margin-bottom:12px; box-sizing:border-box">
+			  <textarea id="gcMembers" placeholder="Add Student IDs, comma separated\nTUPME-23-16469, TUPME-23-16470" rows="3" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; margin-bottom:16px; box-sizing:border-box; resize:vertical"></textarea>
+			  <div style="display:flex; gap:10px">
+				<button onclick="closeCreateGCModal()" style="flex:1; padding:12px; border:1px solid #ddd; background:white; border-radius:8px">Cancel</button>
+				<button onclick="createGroupChat()" style="flex:1; padding:12px; border:none; background:#10b981; color:white; border-radius:8px; font-weight:600">Create</button>
+			  </div>
+			</div>
+		  </div>
+
+		  <!-- Dynamic group list renders here -->
+		  <div id="groupChatsList">
+			<p style="opacity:0.6; text-align:center; padding:20px">Loading groups...</p>
+		  </div>
+		</div>
+		<!-- GROUP CHAT ROOM -->
+		<div id="groupChatRoom" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:#f5f5f5; z-index:9999; flex-direction:column">
+
+		  <!-- Header -->
+		  <div style="background:#0d7a5c; color:white; padding:16px; display:flex; align-items:center; gap:12px; box-shadow:0 2px 4px rgba(0,0,0,0.1)">
+			<button onclick="closeGroupChat()" style="background:none; border:none; color:white; cursor:pointer; padding:4px; display:flex; align-items:center">
+			  <!-- Back arrow SVG -->
+			  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<path d="M19 12H5M12 19l-7-7 7-7"/>
+			  </svg>
+			</button>
+			<div style="flex:1">
+			  <div id="groupChatName" style="font-size:18px; font-weight:600">Group Name</div>
+			  <div id="groupChatMembers" style="font-size:12px; opacity:0.9">0 members</div>
+			</div>
+		  </div>
+
+		  <!-- Messages -->
+		  <div id="groupMessages" style="flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column">
+			<div style="text-align:center; color:#999; padding:20px">Loading...</div>
+		  </div>
+
+		  <!-- Input -->
+		  <div style="display:flex; gap:8px; padding:12px; background:white; border-top:1px solid #e5e7eb">
+			<input id="groupInput" type="text" placeholder="Type a message..." 
+			  style="flex:1; padding:12px 16px; border-radius:24px; border:1px solid #ddd; outline:none; font-size:14px"
+			  onkeypress="if(event.key==='Enter') sendGroupMsg()">
+			<button onclick="sendGroupMsg()" style="background:#10b981; color:white; border:none; border-radius:50%; width:44px; height:44px; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+		  </div>
+		</div>
+		<!-- Instructor Message List Item - CLICKABLE -->
+		<div onclick="openInstructorChat()" style="background: white; padding: 14px 20px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #f0f0f0; cursor: pointer">
+		  <div style="width: 48px; height: 48px; border-radius: 50%; background: #1877f2; display: flex; align-items: center; justify-content: center">
+			<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+			  <circle cx="9" cy="7" r="4"/>
+			  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+			  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+			</svg>
+		  </div>
+		  <div style="flex: 1; min-width: 0">
+			<div style="font-size: 15px; font-weight: 600; color: #1a1a1a">Instructor Message</div>
+			<div id="lastInstructorMsg" style="font-size: 13px; color: #6b7280; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">No announcements yet</div>
+		  </div>
+		  <div style="font-size: 11px; color: #9ca3af" id="instructorTime"></div>
+		</div>
+
+		<!-- Global Chat Room - Full screen overlay -->
+		<div id="globalChatRoom" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:#f5f4f0; z-index:999"> 
+		  <div style="background:#1a5c4d; color:white; padding:16px; display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:10"> 
+			<div onclick="closeGlobalChat()" style="width:24px; height:24px; cursor:pointer; display:flex; align-items:center; justify-content:center">
+			  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<line x1="19" y1="12" x2="5" y2="12"/>
+				<polyline points="12 19 5 12 12 5"/>
+			  </svg>
+			</div>
+			<div style="flex:1">
+			  <div style="font-size:16px; font-weight:600">Global Chat</div>
+			  <div style="font-size:12px; opacity:0.8">All TUPSGC students</div>
+			</div>
+		  </div>
+		  <div id="globalMessages" style="height:calc(100vh - 140px); overflow-y:auto; padding:16px; padding-bottom:70px"></div>
+		  <div style="position:fixed; bottom:0; left:0; right:0; background:white; padding:12px; display:flex; gap:8px; border-top:1px solid #eee">
+			<input id="globalInput" type="text" placeholder="Type message..." style="flex:1; border:1px solid #ddd; border-radius:20px; padding:10px 16px; font-size:14px; outline:none">
+			<button onclick="sendGlobalMsg()" style="background:#1a5c4d; color:white; border:none; border-radius:50%; width:40px; height:40px; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+		  </div>
+		</div>
+
+		<!-- Instructor Chat Room - Full screen overlay -->
+		<div id="instructorChatRoom" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:white;z-index:1000;flex-direction:column"> 
+		  <div style="background:#1a5c4d;color:white;padding:12px 16px;display:flex;align-items:center;gap:12px"> 
+			<button onclick="closeInstructorChat()" style="background:none;border:none;color:white;width:24px;height:24px;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center">
+			  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<line x1="19" y1="12" x2="5" y2="12"/>
+				<polyline points="12 19 5 12 12 5"/>
+			  </svg>
+			</button> 
+			<div style="flex:1"> 
+			  <div style="font-weight:600;font-size:16px">Instructor Message</div> 
+			  <div style="font-size:12px;opacity:0.8">Announcements from instructors</div> 
+			</div> 
+		  </div>
+		  <div id="instructorMessages" style="flex:1;overflow-y:auto;padding:12px;background:#f0f2f5"></div> 
+		  <div id="instructorInputBox" style="padding:8px 12px;border-top:1px solid #e0e0e0;display:flex;gap:8px;background:white"> 
+			<input id="instructorInput" type="text" placeholder="Send announcement..." style="flex:1;border-radius:20px;border:none;background:#f0f2f5;padding:10px 16px;outline:none;font-size:15px"> 
+			<button onclick="sendInstructorMsg()" style="background:#1a5c4d;color:white;border:none;border-radius:50%;width:40px;height:40px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">
+			  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<line x1="22" y1="2" x2="11" y2="13"/>
+				<polygon points="22 2 15 22 11 13 2 9 22 2"/>
+			  </svg>
+			</button> 
+			<!-- Announcement Popup -->
+			<div id="announcePopup" style="display:none; position:fixed; top:70px; left:50%; transform:translateX(-50%); background:#1877f2; color:white; padding:16px 20px; border-radius:12px; box-shadow:0 8px 20px rgba(0,0,0,0.25); z-index:10001; max-width:340px; animation:slideDown 0.3s ease">
+			  <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px">
+				<svg width="20" height="20" fill="white" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+				<div style="font-weight:700; font-size:15px">New Announcement</div>
+			  </div>
+			  <div id="announceText" style="font-size:13px; line-height:1.4; opacity:0.95"></div>
+			  <button onclick="closeAnnouncePopup()" style="background:white; color:#1877f2; border:none; padding:6px 14px; border-radius:6px; margin-top:10px; font-size:12px; font-weight:600; cursor:pointer">Got it</button>
+			</div>
+		  </div>
+		</div>`
+		};
+
+		function switchTab(tab, btn) {
+		document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+		btn.classList.add('active');
+		let html = tabData[tab];
+		const role = localStorage.getItem('role');
+
+		if(tab === 'messages' && role === 'student') {
+		// Remove Instructor Message card from HTML string before injecting
+		html = html.replace(/<div[^>]*onclick="openInstructorChat\(\)"[^>]*>[\s\S]*?Instructor Message[\s\S]*?<\/div>/g, '');
+			}
+
+			document.getElementById('tabContent').innerHTML = html;
+			document.getElementById('welcomeRole').textContent = currentRole.charAt(0).toUpperCase() + currentRole.slice(1) + ' Dashboard';
+
+			if(tab === 'map') {
+			setTimeout(() => {
+			initMap();
+			setTimeout(refreshLocation, 1500);
+			saveStudentLocation(); // auto save student location
+
+			const role = localStorage.getItem('role');
+			const trackerCard = document.getElementById('studentTrackerCard');
+			if(trackerCard && (role === 'admin' || role === 'instructor')) {
+			trackerCard.style.display = 'block';
+			setTimeout(trackStudents, 1000);
+			}
+			}, 100);
+			}
+
+			if(tab === 'attendance') {
+			setTimeout(loadAttendanceList, 100);
+			}
+			if(tab === 'hazard') {
+			setTimeout(() => { initHazardReportMap(); loadMyHazards(); loadHazardHistory(); }, 150);
+			}
+			if(tab === 'safety') {
+			const role = localStorage.getItem('role');
+			console.log('Role:', role); // debug
+			if(role === 'admin' || role === 'instructor') {
+			setTimeout(() => {
+			console.log('Calling listeners...'); // debug
+			listenSOSAlerts();
+			loadSOSHistory();
+			}, 100);
+			} else {
+			const card = document.getElementById('sosHistoryCard');
+			if(card) card.style.display = 'none';
+			}
+			}
+			}
+
+			function markAttendance() {
+			const userId = localStorage.getItem('userId');
+			const userName = localStorage.getItem('userName') || userId;
+			const userRole = localStorage.getItem('role') || 'student';
+			const today = new Date().toISOString().split('T')[0];
+			const docId = userId + '_' + today;
+			const btn = document.getElementById('markAttendanceBtn');
+			const status = document.getElementById('attendanceStatus');
+
+			if(userRole!== 'student') return alert('Only students can mark attendance');
+
+			btn.disabled = true;
+			btn.textContent = 'Saving...';
+			status.innerHTML = 'Marking attendance...';
+
+			// 1. Save attendance WITHOUT location
+			db.collection('attendance').doc(docId).set({
+			userId: userId,
+			userName: userName,
+			role: userRole,
+			date: today,
+			timestamp: firebase.firestore.FieldValue.serverTimestamp()
+			}).then(() => {
+			btn.innerHTML = `Present 
+			<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-left:4px">
+			  <polyline points="20 6 9 17 4 12"/>
+			</svg>`;
+			status.innerHTML = 'Present marked at ' + new Date().toLocaleTimeString() + '<br><span style="color:#666">Getting your location...</span>';
+
+			// 2. After saving, get location and SHOW it + SAVE it for admin
+			if(navigator.geolocation) {
+			navigator.geolocation.getCurrentPosition(async pos => {
+			const lat = pos.coords.latitude;
+			const lng = pos.coords.longitude;
+
+			// Get exact address
+			let address = lat.toFixed(5) + ', ' + lng.toFixed(5);
+			try {
+			const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+			const data = await res.json();
+			address = data.display_name || address;
+			} catch(e) {}
+
+			// Show location to student only 
+			status.innerHTML = 'Present marked at ' + new Date().toLocaleTimeString() + 
+			'<br><small style="color:#27ae60; display:inline-flex; align-items:center; gap:4px">' +
+			  '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#27ae60" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">' +
+				'<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>' + 
+			  address.split(',').slice(0,3).join(',') + 
+			  '</small>';
+
+			// NEW: Save location separately for admin to view in Today's Check-ins
+			db.collection('student_locations').doc(userId).set({
+			userId: userId,
+			userName: userName,
+			lat: lat,
+			lng: lng,
+			address: address,
+			lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
+			});
+			}, err => {
+			status.innerHTML += '<br><small style="color:#e74c3c">Location not available</small>';
+			}, {enableHighAccuracy: true, timeout: 8000, maximumAge: 0});
+			}
+			}).catch(err => {
+			alert('Error: ' + err.message);
+			btn.disabled = false;
+			btn.textContent = 'Mark Present';
+			status.innerHTML = '';
+			});
+			}
+
+			async function loadAttendanceList() {
+			const role = localStorage.getItem('role');
+			const listCard = document.getElementById('attendanceListCard');
+			const countDiv = document.getElementById('attendanceCount');
+			const listDiv = document.getElementById('attendanceList');
+
+			if(role!== 'instructor' && role!== 'admin') {
+			if(listCard) listCard.style.display = 'none';
+			return;
+			}
+			if(listCard) listCard.style.display = 'block';
+			if(countDiv) countDiv.textContent = 'Loading...';
+
+			try {
+			const today = new Date().toISOString().split('T')[0];
+			const snapshot = await db.collection('attendance')
+			.where('date', '==', today)
+			.orderBy('timestamp', 'desc')
+			.get();
+
+			if(countDiv) countDiv.textContent = snapshot.size + ' student(s) present today';
+			if(snapshot.empty) {
+			listDiv.innerHTML = '<p style="opacity:0.6">No check-ins yet</p>';
+			return;
+			}
+
+			// Clear old markers
+			if(window.markers) {
+			Object.values(window.markers).forEach(m => window.attendanceMap.removeLayer(m));
+			}
+			window.markers = {};
+
+			let html = '';
+			for(const doc of snapshot.docs) {
+			const a = doc.data();
+			const time = a.timestamp? new Date(a.timestamp.toDate()).toLocaleTimeString() : '';
+			const userId = a.userId;
+
+			let lat = null, lng = null, address = '';
+			try {
+			const locDoc = await db.collection('student_locations').doc(userId).get();
+			if(locDoc.exists) {
+			const loc = locDoc.data();
+			lat = loc.lat;
+			lng = loc.lng;
+			address = loc.address || '';
+			if(!address && lat && lng) {
+            try {
+			const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
+			const geoData = await geoRes.json();
+			address = geoData.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+            } catch(geoErr) {
+			address = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+            }
+			}
+			}
+			} catch(e) {}
+
+			// Add marker to map if coords exist
+			if(lat && lng && window.attendanceMap) {
+			window.markers[doc.id] = L.marker([lat, lng])
+			.addTo(window.attendanceMap)
+			.bindPopup(`<b>${a.userName || userId}</b><br>${time}<br>${address}`);
+			}
+
+			// Row: name/address left, Locate button right
+			html += `
+			<div style="padding:12px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center">
+			  <div style="flex:1; font-size:13px">
+				<b>${a.userName || userId}</b><br>
+				<small style="opacity:0.6">${time}</small>
+				${address? `
+				<br><small style="opacity:0.6; display:flex; align-items:center; gap:4px; margin-top:4px">
+				  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1a4d47" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+					<circle cx="12" cy="10" r="3"/>
+				  </svg>
+				  ${address}
+				</small>
+				` : ''}
+			  </div>
+			  ${lat && lng? `
+			  <button onclick="locateStudent('${doc.id}', ${lat}, ${lng})"
+				style="padding:8px 12px; background:#1a4d47; color:white; border:none; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; margin-left:10px; display:flex; align-items:center; gap:4px">
+				<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+				  <circle cx="12" cy="10" r="3"/>
+				</svg>
+				Locate
+			  </button>
+			  ` : ''}
+			</div>
+			`;
+			}
+			listDiv.innerHTML = html;
+			} catch(err) {
+			console.error(err);
+			if(countDiv) countDiv.textContent = 'Error loading';
+			}
+			}
+
+			function locateStudent(docId, lat, lng) {
+			window.pendingLat = lat;
+			window.pendingLng = lng;
+			window.pendingDocId = docId;
+
+			// Switch to Map tab
+			const mapBtn = document.querySelector('.nav-item:nth-child(1)');
+			if(mapBtn) mapBtn.click();
+
+			// Wait for map, then load attendance markers + center
+			setTimeout(async () => {
+			if(!window.attendanceMap) window.attendanceMap = window.map;
+			if(!window.attendanceMap) return;
+
+			// Force reload attendance so student pins appear on map
+			if(typeof loadAttendanceList === 'function') {
+			await loadAttendanceList();
+			}
+
+			setTimeout(() => {
+			window.attendanceMap.setView([lat, lng], 19);
+			if(window.markers[docId]) {
+			window.markers[docId].openPopup();
+			// flash 3x
+			let count = 0;
+			const flash = setInterval(() => {
+			if(!window.markers[docId]) { clearInterval(flash); return; }
+			window.markers[docId].setOpacity(count % 2 === 0? 0.3 : 1);
+			count++;
+			if(count > 5) clearInterval(flash);
+			}, 250);
+			}
+			}, 200);
+			}, 500);
+			}
+
+			// HAZARD REPORT MAP
+			let hazardReportMap = null;
+			let hazardReportPin = null;
+
+			function initHazardReportMap() {
+			if(hazardReportMap) { hazardReportMap.remove(); hazardReportMap = null; }
+			hazardReportPin = null;
+			window.tapLat = null; window.tapLng = null; window.tapAddress = null;
+
+			const el = document.getElementById('hazardReportMap');
+			if(!el) return;
+
+			const startLat = userLat || 14.65;
+			const startLng = userLng || 121.03;
+
+			hazardReportMap = L.map('hazardReportMap').setView([startLat, startLng], 15);
+			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			attribution: 'ÃÂ© OpenStreetMap'
+			}).addTo(hazardReportMap);
+
+			// Try to center on user GPS
+			if(navigator.geolocation) {
+			navigator.geolocation.getCurrentPosition(pos => {
+			hazardReportMap.setView([pos.coords.latitude, pos.coords.longitude], 16);
+			}, () => {});
+			}
+
+			// Tap to pin
+			var pinIcon = L.divIcon({
+			className: '',
+			html: '<div style="width:32px;height:32px;display:flex;align-items:center;justify-content:center">' +
+			  '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="#e74c3c" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,0.35))">' +
+				'<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>' +
+				'<circle cx="12" cy="9" r="2.5" fill="white"/></svg></div>',
+			iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -34]
+			});
+
+			hazardReportMap.on('click', async function(e) {
+			if(hazardReportPin) hazardReportMap.removeLayer(hazardReportPin);
+			hazardReportPin = L.marker(e.latlng, { icon: pinIcon }).addTo(hazardReportMap);
+			hazardReportPin.bindPopup('<small style="color:#888">Getting address...</small>').openPopup();
+
+			const lat = e.latlng.lat;
+			const lng = e.latlng.lng;
+			const address = await getAddress(lat, lng);
+
+			window.tapLat = lat;
+			window.tapLng = lng;
+			window.tapAddress = address;
+
+			hazardReportPin.setPopupContent('<b>Ã° Hazard here</b><br><small>' + address + '</small>').openPopup();
+
+			const locEl = document.getElementById('hazardLocationText');
+			if(locEl) locEl.innerHTML = 'Ã° <b>Pinned:</b> ' + address;
+			});
+			}
+
+
+			async function submitHazardTab() {
+			const type = document.getElementById('hazardType').value;
+			const desc = document.getElementById('hazardDesc').value.trim();
+			const statusEl = document.getElementById('hazardStatus');
+			if(!type) return alert('Please select a hazard type');
+
+			const userId = localStorage.getItem('userId');
+			const userName = localStorage.getItem('userName') || userId;
+
+			statusEl.style.color = '#888';
+			statusEl.innerHTML = 'Getting your location...';
+
+			navigator.geolocation.getCurrentPosition(async pos => {
+			try {
+			statusEl.innerHTML = 'Submitting...';
+			const lat = pos.coords.latitude;
+			const lng = pos.coords.longitude;
+			const address = await getAddress(lat, lng);
+
+			await db.collection('hazards').add({
+			type, description: desc,
+			reporterId: userId, reporterName: userName,
+			lat, lng, address,
+			timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+			status: 'pending'
+			});
+
+			statusEl.style.color = '#27ae60';
+			statusEl.innerHTML = 'Ã¢ Hazard reported successfully!';
+			document.getElementById('hazardType').value = '';
+			document.getElementById('hazardDesc').value = '';
+			document.getElementById('hazardLocationText').innerHTML = 'Ã° Tap the map above to pin a location, or your GPS will be used';
+			window.tapLat = null; window.tapLng = null; window.tapAddress = null;
+			if(hazardReportPin && hazardReportMap) { hazardReportMap.removeLayer(hazardReportPin); hazardReportPin = null; }
+			setTimeout(() => { statusEl.innerHTML = ''; loadMyHazards(); }, 1500);
+			} catch(err) {
+			statusEl.style.color = '#e74c3c';
+			statusEl.innerHTML = 'Error: ' + err.message;
+			}
+			}, () => {
+			statusEl.style.color = '#e74c3c';
+			statusEl.innerHTML = 'Ã¢ GPS unavailable Ã¢ please enable location access';
+			}, { enableHighAccuracy: true, timeout: 10000 });
+			}
+
+			function loadMyHazards() {
+			const userId = localStorage.getItem('userId');
+			const role = localStorage.getItem('role');
+			const card = document.getElementById('myHazardHistoryCard');
+			const list = document.getElementById('myHazardHistoryList');
+			if(!list) return;
+
+			if(role === 'admin' || role === 'instructor') {
+			if(card) card.style.display = 'none';
+			return;
+			}
+			if(card) card.style.display = 'block';
+
+			const typeColors = { Flood:'#3498db', Fire:'#e74c3c', Earthquake:'#d97706', Landslide:'#8b5e3c', Other:'#9b59b6' };
+			const statusColors = { pending:'#f39c12', verified:'#27ae60', resolved:'#888', rejected:'#e74c3c' };
+
+			db.collection('hazards')
+			.where('reporterId', '==', userId)
+			.get()
+			.then(snapshot => {
+			if(snapshot.empty) {
+			list.innerHTML = '<p style="opacity:0.6;text-align:center;padding:20px">No reports yet</p>';
+			return;
+			}
+			// Sort by timestamp descending in JS (avoids needing a Firestore composite index)
+			const docs = snapshot.docs.sort((a, b) => {
+			const ta = a.data().timestamp?.seconds || 0;
+			const tb = b.data().timestamp?.seconds || 0;
+			return tb - ta;
+			}).slice(0, 20);
+
+			let html = '';
+			docs.forEach(doc => {
+			const h = doc.data();
+			const time = h.timestamp ? new Date(h.timestamp.seconds * 1000).toLocaleString('en-US', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : 'Pending';
+			const typeColor = typeColors[h.type] || '#888';
+			const status = h.status || 'pending';
+			const statusColor = statusColors[status] || '#888';
+			html += `<div style="background:#f9f9f9;border-radius:12px;padding:12px 14px;margin-bottom:10px;border-left:4px solid ${typeColor}">
+			  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+				<span style="background:${typeColor};color:white;padding:3px 8px;border-radius:8px;font-size:12px;font-weight:600">${h.type||'Other'}</span>
+				<span style="background:${statusColor};color:white;padding:3px 8px;border-radius:8px;font-size:11px">${status}</span>
+			  </div>
+			  <div style="font-size:13px;color:#333;margin-bottom:4px">${h.address||'No address'}</div>
+			  ${h.description?`<div style="font-size:12px;color:#666;font-style:italic">"${h.description}"</div>`:''}
+			  <div style="font-size:11px;color:#999;margin-top:4px">${time}</div>
+			</div>`;
+			});
+			list.innerHTML = html;
+			})
+			.catch(err => {
+			list.innerHTML = `<p style="color:#e74c3c;font-size:13px">Error: ${err.message}</p>`;
+			});
+			}
+
+			function confirmHazardReport(docId) {
+			const role = localStorage.getItem('role');
+			if(role !== 'admin' && role !== 'instructor') {
+			return alert('Only admin/instructor can confirm hazard reports');
+			}
+			db.collection('hazards').doc(docId).update({ status: 'verified' })
+			.catch(err => alert('Error: ' + err.message));
+			}
+
+
+			function autoCall(number) {
+			window.location.href = `tel:${number}`;
+			}
+
+
+			async function sendSOS() { 
+			navigator.geolocation.getCurrentPosition(async pos => {
+			const userId = localStorage.getItem('userId');
+			const userName = localStorage.getItem('userName') || userId; // saves username
+			const userRole = localStorage.getItem('role');
+			const lat = pos.coords.latitude;
+			const lng = pos.coords.longitude;
+			const address = await getAddress(lat, lng);
+
+			await db.collection('sos_alerts').add({
+			senderId: userId,
+			senderName: userName, // <-- new field for username
+			senderRole: userRole,
+			lat: lat,
+			lng: lng,
+			address: address,
+			timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+			status: 'active'
+			});
+
+			alert(`SOS sent!\n${address}\nAdmins/Instructors notified.`);
+			}, () => alert('Enable GPS first'));
+			}
+
+
+			async function toggleFlashlight() {
+			const label = document.getElementById('flashlightLabel');
+			const btn = document.getElementById('flashlightBtn');
+
+			try {
+			if(!flashlightOn) {
+			// Turn ON real phone LED
+			flashlightStream = await navigator.mediaDevices.getUserMedia({
+			video: { facingMode: 'environment' }
+			});
+			const track = flashlightStream.getVideoTracks()[0];
+
+			if(track.getCapabilities().torch) {
+			await track.applyConstraints({advanced: [{torch: true}]});
+			flashlightOn = true;
+			label.textContent = 'ON';
+			btn.style.background = 'rgba(255,255,0,0.3)';
+			} else {
+			alert('Torch not supported on this phone');
+			flashlightStream.getTracks().forEach(t => t.stop());
+			}
+
+			} else {
+			// Turn OFF
+			const track = flashlightStream.getVideoTracks()[0];
+			await track.applyConstraints({advanced: [{torch: false}]});
+			flashlightStream.getTracks().forEach(t => t.stop());
+			flashlightStream = null;
+
+			flashlightOn = false;
+			label.textContent = 'Flashlight';
+			btn.style.background = 'rgba(255,255,255,0.15)';
+			}
+
+			} catch(e) {
+			alert('Flashlight needs HTTPS + Chrome Android + Camera permission');
+			console.error(e);
+			}
+			}
+
+			async function shareLocation() {
+			navigator.geolocation.getCurrentPosition(async pos => {
+			const lat = pos.coords.latitude;
+			const lng = pos.coords.longitude;
+			const address = await getAddress(lat, lng);
+			const link = `https://maps.google.com/?q=${lat},${lng}`;
+			if(navigator.share) {
+			navigator.share({title: 'Emergency Location', text: `I need help! ${address}`, url: link});
+			} else {
+			try {
+			await navigator.clipboard.writeText(`${address}\n${link}`);
+			showToast('<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px;flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg>Location copied to clipboard', true);
+			} catch(e) {
+			showToast('Could not copy location', false);
+			}
+			}
+			}, () => showToast('Enable GPS first', false));
+			}
+
+			async function sendAlertAll() {
+			const role = localStorage.getItem('role');
+			const userName = localStorage.getItem('userName') || 'Admin';
+			const userId = localStorage.getItem('userId') || 'N/A';
+
+			let lat = 0, lng = 0, address = 'No location';
+			try {
+			const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, {timeout:3000}));
+			lat = pos.coords.latitude;
+			lng = pos.coords.longitude;
+			address = await getAddress(lat, lng);
+			} catch(e) {}
+
+			await db.collection('sos_alerts').add({
+			senderName: userName,
+			senderId: userId,
+			senderRole: role,
+			targetRole: ['student', 'admin', 'instructor'],
+			type: 'broadcast',
+			message: '',
+			address: address,
+			lat: lat,
+			lng: lng,
+			status: 'active',
+			timestamp: firebase.firestore.FieldValue.serverTimestamp()
+			});
+
+			alert('Alert sent to all users!');
+			}
+
+			// Validate ID based on role
+			function validateID(id, role) {
+			id = id.toUpperCase().trim();
+			if(role === 'student') {
+			return /^TUP[A-Z]{2}-\d{2}-\d{5}$/.test(id);
+			} else {
+			return /^\d{2}-\d{4}$/.test(id);
+			}
+			}
+
+			// Generate unique device ID per phone/browser
+			function getDeviceId() {
+			let deviceId = localStorage.getItem('deviceId');
+			if(!deviceId) {
+			deviceId = 'dev_' + Date.now() + '_' + Math.random().toString(36).substr(2,9);
+			localStorage.setItem('deviceId', deviceId);
+			}
+			return deviceId;
+			}
+
+			// Auto-format while typing - switches based on role
+			document.getElementById('signupId')?.addEventListener('input', function(e) {
+			let v = e.target.value.toUpperCase();
+			if(currentRole === 'student') {
+			v = v.replace(/[^A-Z0-9]/g, '');
+			if(v.length > 5) v = v.slice(0,5) + '-' + v.slice(5);
+			if(v.length > 8) v = v.slice(0,8) + '-' + v.slice(8);
+			} else {
+			v = v.replace(/[^0-9]/g, '');
+			if(v.length > 2) v = v.slice(0,2) + '-' + v.slice(2);
+			}
+			e.target.value = v;
+			});
+
+			// Same for login field
+			document.getElementById('loginId')?.addEventListener('input', function(e) {
+			let v = e.target.value.toUpperCase();
+			if(currentRole === 'student') {
+			v = v.replace(/[^A-Z0-9]/g, '');
+			if(v.length > 5) v = v.slice(0,5) + '-' + v.slice(5);
+			if(v.length > 8) v = v.slice(0,8) + '-' + v.slice(8);
+			} else {
+			v = v.replace(/[^0-9]/g, '');
+			if(v.length > 2) v = v.slice(0,2) + '-' + v.slice(2);
+			}
+			e.target.value = v;
+			});
+
+			// LOGIN with device lock
+			document.getElementById('loginForm').onsubmit = async e => { 
+			e.preventDefault(); 
+			const userId = document.getElementById('loginId').value.trim().toUpperCase(); 
+			const pwd = document.getElementById('loginPwd').value; 
+			const deviceId = getDeviceId();
+
+			if(!validateID(userId, currentRole)) {
+			return alert(currentRole === 'student' 
+			? 'Invalid Student ID format\nExample: TUPME-23-16469' 
+			: 'Invalid Employee ID');
+			}
+
+			const userDoc = await db.collection('users').doc(userId).get(); 
+			if(!userDoc.exists) return alert('Invalid ID'); 
+
+			const userData = userDoc.data(); 
+			if(userData.role !== currentRole) return alert(`This account is ${userData.role}. Use ${userData.role} tab.`); 
+
+			// Verify password against stored hash
+			if(!userData.passwordHash || !userData.passwordSalt) {
+			return alert('This account has no password set. Please contact an admin.');
+			}
+			const enteredHash = await hashPassword(pwd, userData.passwordSalt);
+			if(enteredHash !== userData.passwordHash) {
+			return alert('Incorrect password');
+			}
+
+			// 1 DEVICE LOCK: Check if account is used on another device
+			if(userData.deviceId && userData.deviceId !== deviceId) {
+			return alert('Account is active on another device\nLogout from other device first');
+			}
+
+			// Save deviceId on first login
+			if(!userData.deviceId) {
+			await db.collection('users').doc(userId).update({deviceId: deviceId});
+			}
+
+			localStorage.setItem('userName', userData.name || userId); 
+			localStorage.setItem('userId', userId); 
+			localStorage.setItem('role', userData.role); 
+			document.querySelector('.dashboard-header h2').textContent = `Welcome, ${userData.name || userId}`; 
+			showScreen('dashboard');
+			// Start announcement listener for all roles
+			setTimeout(listenAnnouncements, 1000); 
+
+			if(userData.role === 'student') { 
+			setTimeout(() => { 
+			if(navigator.geolocation) { 
+			navigator.geolocation.getCurrentPosition( 
+			pos => console.log('GPS OK:', pos.coords.latitude, pos.coords.longitude), 
+			err => console.log('GPS blocked:', err.message) 
+			); 
+			} 
+			}, 2000); 
+			} 
+			}; 
+
+			// SIGNUP with device lock
+			document.getElementById('signupForm').onsubmit = async e => {
+			e.preventDefault();
+			const id = document.getElementById('signupId').value.trim().toUpperCase();
+			const name = document.getElementById('signupName').value.trim();
+			const email = document.getElementById('signupEmail').value.trim();
+			const pwd = document.getElementById('signupPwd').value;
+			const pwd2 = document.getElementById('signupPwd2').value;
+			const deviceId = getDeviceId();
+
+			if(pwd!== pwd2) return alert('Passwords do not match');
+			if(!validateID(id, currentRole)) {
+			return alert(currentRole === 'student'? 'Invalid Student ID format\nExample: TUPME-23-16469' : 'Invalid Employee ID');
+			}
+
+			// 1. Check if ID already registered
+			const exists = await db.collection('users').doc(id).get();
+			if(exists.exists) return alert('ID already registered');
+
+			// 2. NEW: Check if this device already has an account
+			const deviceCheck = await db.collection('users')
+			.where('deviceId', '==', deviceId)
+			.limit(1)
+			.get();
+
+			if(!deviceCheck.empty) {
+			const oldUser = deviceCheck.docs[0].data();
+			return alert(`Account already created on this device\nUser: ${oldUser.name} - ${oldUser.userId}\n1 device = 1 account only`);
+			}
+
+			// 3. Create account + lock device
+			const passwordSalt = generateSalt();
+			const passwordHash = await hashPassword(pwd, passwordSalt);
+
+			await db.collection('users').doc(id).set({
+			name: name,
+			email: email,
+			role: currentRole,
+			userId: id,
+			passwordHash: passwordHash,
+			passwordSalt: passwordSalt,
+			deviceId: deviceId, // lock to this device
+			createdAt: firebase.firestore.FieldValue.serverTimestamp()
+			});
+
+			localStorage.setItem('userId', id);
+			localStorage.setItem('userName', name);
+			localStorage.setItem('role', currentRole);
+			localStorage.setItem('deviceId', deviceId);
+
+			alert(`Account created and locked to this device`);
+			showLogin();
+			};
+
+			// Password hashing helpers (SHA-256 + per-user salt via Web Crypto)
+			async function sha256Hex(message) {
+			const enc = new TextEncoder().encode(message);
+			const hashBuffer = await crypto.subtle.digest('SHA-256', enc);
+			return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+			}
+			function generateSalt() {
+			const arr = new Uint8Array(16);
+			crypto.getRandomValues(arr);
+			return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
+			}
+			async function hashPassword(password, salt) {
+			return await sha256Hex(salt + ':' + password);
+			}
+
+			// LOGOUT - release device lock
+			function logout() { 
+			const userId = localStorage.getItem('userId');
+
+			// Remove device lock from Firestore
+			if(userId) {
+			db.collection('users').doc(userId).update({deviceId: firebase.firestore.FieldValue.delete()});
+			}
+
+			localStorage.removeItem('userId'); 
+			localStorage.removeItem('role'); 
+			localStorage.removeItem('userName'); 
+			// Keep deviceId so same phone keeps same ID
+
+			if(map) { 
+			map.remove(); 
+			map = null; 
+			userMarker = null; 
+			hazardMarkers = []; 
+			tempMarker = null; 
+			} 
+
+			currentRole = 'student'; 
+			document.getElementById('welcomeName').textContent = 'Welcome, Student'; 
+			document.getElementById('welcomeRole').textContent = 'Student Dashboard'; 
+			const loginId = document.getElementById('loginId'); 
+			const loginPwd = document.getElementById('loginPwd'); 
+			if(loginId) loginId.value = ''; 
+			if(loginPwd) loginPwd.value = ''; 
+			showScreen('auth'); 
+			window.scrollTo(0, 0); 
+			}
+
+			function listenSOSAlerts() { 
+			const role = localStorage.getItem('role'); 
+			const userId = localStorage.getItem('userId'); 
+
+			console.log('[SOS] Listener started for role:', role);
+
+			// No .where() = no index needed. We filter in JS instead
+			db.collection('sos_alerts')
+			.orderBy('timestamp', 'desc')
+			.limit(10)
+			.onSnapshot(snapshot => { 
+			console.log('[SOS] Snapshot fired. Docs:', snapshot.size);
+
+			snapshot.docChanges().forEach(change => { 
+			if (change.type === 'added') { 
+			const alert = change.doc.data(); 
+			console.log('[SOS] New alert:', alert);
+
+			// Skip if I sent it
+			if(alert.senderId === userId) return;
+
+			// Only show if status = active
+			if(alert.status !== 'active') return;
+
+			// Show for all roles for now to test. Later we add role filter back
+			// const targetRoles = alert.targetRole || ['student','admin','instructor'];
+			// if(!targetRoles.includes(role)) return;
+
+			const senderName = alert.senderName || 'Unknown'; 
+			const senderId = alert.senderId || 'N/A'; 
+			const address = alert.address || 'Location unavailable'; 
+			const lat = alert.lat || 0; 
+			const lng = alert.lng || 0; 
+
+			console.log('[SOS] Showing banner for:', senderName);
+			showSOSBanner({...alert, senderName, senderId, address, lat, lng}, change.doc.id); 
+
+			try {
+            new Audio('https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg').play(); 
+			} catch(e) {}
+			} 
+			}); 
+			}, err => {
+			console.error('[SOS] FIRESTORE ERROR:', err);
+			alert('Firestore error: ' + err.message);
+			}); 
+			}
+
+			function showSOSBanner(alert, docId) { 
+			// Remove old banner first
+			const old = document.getElementById('sos-banner-' + docId);
+			if(old) old.remove();
+
+			const banner = document.createElement('div'); 
+			banner.id = 'sos-banner-' + docId; 
+			banner.style.cssText = `position:fixed; top:0; left:0; right:0; z-index:99999; background:#e74c3c; color:white; padding:16px; text-align:center; font-weight:bold; box-shadow:0 4px 12px rgba(0,0,0,0.4); animation:slideDown 0.3s`;
+
+			const typeText = alert.type === 'broadcast' ? 'ALERT' : 'SOS';
+			const msg = alert.message ? `<div style="margin:4px 0">${alert.message}</div>` : '';
+
+			banner.innerHTML = ` 
+			<div style="font-size:18px">${typeText} from ${alert.senderName} (${alert.senderId})</div>
+			${msg}
+			<div style="font-size:13px; opacity:0.9; margin:4px 0">${alert.address}</div>
+			<div style="margin-top:10px">
+			  <button onclick="acknowledgeSOS('${docId}')" style="padding:8px 16px; border:none; border-radius:8px; background:white; color:#e74c3c; font-weight:bold; margin-right:8px">Acknowledge</button> 
+			  <button onclick="openMap(${alert.lat}, ${alert.lng})" style="padding:8px 16px; border:none; border-radius:8px; background:white; color:#e74c3c; font-weight:bold">View Map</button> 
+			</div>
+			<style>@keyframes slideDown{from{transform:translateY(-100%)}to{transform:translateY(0)}}</style>
+			`; 
+			document.body.prepend(banner); 
+			}
+
+			async function acknowledgeSOS(docId) {
+			await db.collection('sos_alerts').doc(docId).update({status: 'acknowledged'});
+			document.getElementById('sos-banner-' + docId).remove();
+			}
+
+			function openMap(lat, lng) {
+			window.open(`https://maps.google.com/?q=${lat},${lng}`, '_blank');
+			}
+			function loadSOSHistory() {
+			const role = localStorage.getItem('role');
+			const card = document.getElementById('sosHistoryCard');
+			const list = document.getElementById('sosHistoryList');
+			if (role !== 'admin' && role !== 'instructor') {
+			if(card) card.style.display = 'none';
+			return;
+			}
+			if(card) card.style.display = 'block';
+
+			db.collection('sos_alerts')
+			.orderBy('timestamp', 'desc')
+			.limit(50)
+			.onSnapshot(snapshot => {
+			if (snapshot.empty) {
+			list.innerHTML = '<p style="color:#000; opacity:0.6; text-align:center; padding:20px">No SOS alerts yet</p>';
+			return;
+			}
+
+			let html = `
+			<div style="overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 -16px; padding:0 16px">
+			  <table style="width:200%; min-width:480px; border-collapse:collapse; font-size:11px; color:#000">
+				<colgroup>
+				  <col style="width:22%">
+				  <col style="width:18%">
+				  <col style="width:35%">
+				  <col style="width:12%">
+				  <col style="width:13%">
+				</colgroup>
+				<tr style="border-bottom:2px solid #ddd; text-align:left; position:sticky; top:0; background:white; z-index:1; color:#000">
+				  <th style="padding:6px 4px; color:#000; font-size:11px">Sender</th>
+				  <th style="padding:6px 4px; color:#000; font-size:11px">Time</th>
+				  <th style="padding:6px 4px; color:#000; font-size:11px">Location</th>
+				  <th style="padding:6px 4px; color:#000; font-size:11px">Status</th>
+				  <th style="padding:6px 4px; color:#000; font-size:11px">Action</th>
+				</tr>
+				`;
+
+				snapshot.forEach(doc => {
+				const a = doc.data();
+				const time = a.timestamp ? new Date(a.timestamp.seconds * 1000).toLocaleString('en-US', {month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'}) : 'Pending';
+				const statusColor = a.status === 'active' ? '#e74c3c' : a.status === 'acknowledged' ? '#f39c12' : '#27ae60';
+
+				const displayName = a.senderName && a.senderName !== a.senderId ? a.senderName : a.senderId;
+				const nameShort = displayName.length > 12 ? displayName.substring(0,12)+'...' : displayName;
+				const nameWithId = `<b style="color:#000; font-size:11px">${nameShort}</b><br><small style="color:#666; font-size:9px">ID:${a.senderId}</small>`;
+
+				html += `
+				<tr style="border-bottom:1px solid #f0f0f0; color:#000">
+				  <td style="padding:6px 4px; line-height:1.2; color:#000">${nameWithId}<br><small style="color:#666; font-size:9px">${a.senderRole || ''}</small></td>
+				  <td style="padding:6px 4px; color:#333; font-size:10px">${time}</td>
+				  <td style="padding:6px 4px; word-break:break-word; font-size:10px; color:#333">${a.address || 'No address'}</td>
+				  <td style="padding:6px 4px">
+					<span style="background:${statusColor}; color:white; padding:2px 5px; border-radius:8px; font-size:9px; white-space:nowrap">${a.status}</span>
+				  </td>
+				  <td style="padding:6px 4px">
+					<button onclick="openMap(${a.lat}, ${a.lng})" style="padding:3px 5px; border:none; background:#3498db; color:white; border-radius:4px; font-size:9px">Map</button>
+					${a.status === 'active' ? `<button onclick="acknowledgeSOS('${doc.id}')" style="margin-top:3px; padding:3px 5px; border:none; background:#f39c12; color:white; border-radius:4px; font-size:9px">Ack</button>` : ''}
+				  </td>
+				</tr>
+				`;
+				});
+				html += '</table></div>';
+			list.innerHTML = html;
+			}, err => {
+			console.error('SOS history error:', err);
+			list.innerHTML = `<p style="color:#e74c3c">Error: ${err.message}</p>`;
+			});
+			}
+
+			function loadHazardHistory() {
+			const role = localStorage.getItem('role');
+			const card = document.getElementById('hazardHistoryCard');
+			const list = document.getElementById('hazardHistoryList');
+			if(!card || !list) return;
+			if (role !== 'admin' && role !== 'instructor') {
+			card.style.display = 'none';
+			return;
+			}
+			card.style.display = 'block';
+			list.innerHTML = '<p style="opacity:0.6; text-align:center; padding:20px">Loading...</p>';
+
+			db.collection('hazards')
+			.orderBy('timestamp', 'desc')
+			.limit(50)
+			.onSnapshot(snapshot => {
+			if (snapshot.empty) {
+			list.innerHTML = '<p style="color:#666; text-align:center; padding:20px">No hazard reports yet</p>';
+			return;
+			}
+
+			const statusColors = {pending: '#f39c12', verified: '#27ae60', resolved: '#888', rejected: '#e74c3c'};
+			const typeColors = {Flood: '#3498db', Fire: '#e74c3c', Earthquake: '#d97706', Landslide: '#8b5e3c', Other: '#9b59b6'};
+
+			let html = '';
+
+			snapshot.forEach(doc => {
+			const h = doc.data();
+			const time = h.timestamp ? new Date(h.timestamp.seconds * 1000).toLocaleString('en-US', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}) : 'Pending';
+			const typeColor = typeColors[h.type] || '#888';
+			const status = h.status || 'pending';
+			const statusColor = statusColors[status] || '#888';
+			const reporter = h.reporterName && h.reporterName !== h.reporterId ? h.reporterName : (h.reporterId || 'Unknown');
+
+			html += `
+			<div style="background:#f9f9f9; border-radius:12px; padding:12px 14px; margin-bottom:10px; border-left:4px solid ${typeColor}">
+			  <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px">
+				<div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap">
+				  <span style="background:${typeColor}; color:white; padding:3px 8px; border-radius:8px; font-size:12px; font-weight:600">${h.type || 'Other'}</span>
+				  <span style="background:${statusColor}; color:white; padding:3px 8px; border-radius:8px; font-size:11px">${status}</span>
+				  ${status==='pending'?`<button onclick="confirmHazardReport('${doc.id}')" style="padding:3px 8px;border:none;background:#27ae60;color:white;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer">Confirm</button>`:''}
+				</div>
+				<button onclick="openMap(${h.lat}, ${h.lng})" style="padding:5px 10px; border:none; background:#3498db; color:white; border-radius:8px; font-size:12px; font-weight:600; white-space:nowrap; flex-shrink:0">Ã° Map</button>
+			  </div>
+			  <div style="font-size:13px; color:#333; margin-bottom:4px; line-height:1.4">${h.address || 'No address'}</div>
+			  ${h.description ? `<div style="font-size:12px; color:#666; margin-bottom:4px; font-style:italic">"${h.description}"</div>` : ''}
+			  <div style="display:flex; justify-content:space-between; font-size:11px; color:#999; margin-top:4px">
+				<span>Ã°Â¤ ${reporter}</span>
+				<span>${time}</span>
+			  </div>
+			</div>
+			`;
+			});
+
+			list.innerHTML = html;
+			}, err => {
+			console.error('Hazard history error:', err);
+			list.innerHTML = `<p style="color:#e74c3c">Error: ${err.message}</p>`;
+			});
+			}
+
+			function loadModules() {
+			const role = localStorage.getItem('role');
+			const uploadForm = document.getElementById('uploadForm');
+			const list = document.getElementById('modulesList');
+
+			if(uploadForm) {
+			uploadForm.style.display = (role === 'admin' || role === 'instructor')? 'block' : 'none';
+			}
+
+			if(!list) return;
+
+			db.collection('modules').orderBy('createdAt', 'desc').onSnapshot(function(snapshot) {
+			if(snapshot.empty) {
+			list.innerHTML = (role === 'admin' || role === 'instructor')? '<p style="opacity:0.6; text-align:center">No modules yet. Use form above to add.</p>' : '<p style="opacity:0.6; text-align:center">No modules uploaded yet</p>';
+			return;
+			}
+
+			var html = '';
+			snapshot.forEach(function(doc) {
+			var m = doc.data();
+			var fileId = '';
+			if(m.link && m.link.indexOf('/d/') > -1) fileId = m.link.match(/\/d\/(.*?)\//)[1];
+			else if(m.link && m.link.indexOf('id=') > -1) fileId = m.link.split('id=')[1].split('&')[0];
+			var embedLink = fileId? 'https://drive.google.com/file/d/' + fileId + '/preview' : m.link;
+			var downloadLink = fileId? 'https://drive.google.com/uc?export=download&id=' + fileId : m.link;
+
+			// Force activities to be array even if undefined
+			var activities = m.activities || [];
+
+			html += '<div style="border:1px solid #eee; border-radius:10px; padding:14px; margin-bottom:12px"><h4 style="margin:0 0 6px 0; color:#1a4d47">' + m.title + '</h4><p style="font-size:13px; color:#666; margin:0 0 8px 0">' + (m.description || '') + '</p><iframe src="' + embedLink + '" width="100%" height="350" style="border:1px solid #ddd; border-radius:8px"></iframe><a href="' + downloadLink + '" target="_blank" style="display:block; margin-top:8px; font-size:13px; text-align:center; padding:8px; background:#1a4d47; color:white; border-radius:6px; text-decoration:none; font-weight:600"> Download PDF</a>' +
+
+			  // ACTIVITIES - will show if array has items
+			  (activities.length > 0? activities.map(function(a){return '<div style="margin-top:10px; padding:10px; background:#fff7ed; border-left:4px solid #d97706; border-radius:6px"><b style="color:#d97706; font-size:14px">' + a.title + '</b>' + (a.desc? '<p style="margin:5px 0; font-size:13px; color:#444">' + a.desc + '</p>' : '') + (a.link? '<a href="' + a.link + '" target="_blank" style="display:inline-block; margin-top:5px; color:#d97706; font-size:13px; text-decoration:underline; font-weight:600">Open Activity</a>' : '') + '</div>';}).join('') : '') +
+
+			  (role === 'admin' || role === 'instructor'? '<button onclick="deleteUnit(\'' + doc.id + '\')" style="margin-top:10px; padding:6px 12px; background:#e74c3c; color:white; border:none; border-radius:6px; font-size:12px">Delete Unit</button>' : '') +
+
+			  '</div>';
+			});
+			list.innerHTML = html;
+			});
+			}
+
+			// 1. Add Unit only
+			async function addUnit() { 
+			var title = document.getElementById('unitTitle').value.trim(); 
+			var desc = document.getElementById('unitDesc').value.trim(); 
+			var link = document.getElementById('unitLink').value.trim(); 
+			var statusEl = document.getElementById('unitStatus'); 
+
+			if(!title ||!link) { 
+			statusEl.innerHTML = '<span style="color:#e74c3c">Title + Link required</span>'; 
+			return; 
+			} 
+
+			if(link.indexOf('drive.google.com') == -1) { 
+			statusEl.innerHTML = '<span style="color:#e74c3c">Must be Google Drive link</span>'; 
+			return; 
+			} 
+
+			statusEl.innerHTML = 'Saving unit...'; 
+
+			var docRef = await db.collection('modules').add({ 
+			title: title, 
+			description: desc, 
+			link: link, 
+			activities: [], // empty array for activities
+			uploadedBy: localStorage.getItem('userName'), 
+			createdAt: firebase.firestore.FieldValue.serverTimestamp() 
+			}); 
+
+			localStorage.setItem('lastUnitId', docRef.id); // save for activity
+
+			statusEl.innerHTML = '<span style="color:#27ae60">Unit saved! Now add activity below</span>'; 
+
+			document.getElementById('unitTitle').value = ''; 
+			document.getElementById('unitDesc').value = ''; 
+			document.getElementById('unitLink').value = ''; 
+
+			setTimeout(function(){statusEl.innerHTML='';}, 3000); 
+			loadModules();
+			}
+
+			// 2. Add Activity to last unit
+			async function addActivity() {
+			var activityTitle = document.getElementById('activityTitle').value.trim();
+			var activityDesc = document.getElementById('activityDesc').value.trim();
+			var activityLink = document.getElementById('activityLink').value.trim();
+			var statusEl = document.getElementById('activityStatus');
+			var lastUnitId = localStorage.getItem('lastUnitId');
+
+			if(!activityTitle) {
+			statusEl.innerHTML = '<span style="color:#e74c3c">Activity Title required</span>';
+			return;
+			}
+
+			if(activityLink &&!activityLink.startsWith('http')) {
+			statusEl.innerHTML = '<span style="color:#e74c3c">Link must start with http:// or https://</span>';
+			return;
+			}
+
+			statusEl.innerHTML = 'Adding activity...';
+
+			var activity = {
+			title: activityTitle,
+			desc: activityDesc,
+			link: activityLink,
+			createdAt: Date.now() // FIXED: use Date.now() instead of serverTimestamp
+			};
+
+			try {
+			if(!lastUnitId) {
+			var unitTitle = document.getElementById('unitTitle').value.trim() || activityTitle;
+			var unitDesc = document.getElementById('unitDesc').value.trim() || 'Activity only';
+			var unitLink = document.getElementById('unitLink').value.trim() || activityLink;
+
+			if(!unitLink) {
+			statusEl.innerHTML = '<span style="color:#e74c3c">Paste Google Drive link or Activity link</span>';
+			return;
+			}
+
+			var docRef = await db.collection('modules').add({
+			title: unitTitle,
+			description: unitDesc,
+			link: unitLink,
+			activities: [activity],
+			uploadedBy: localStorage.getItem('userName'),
+			createdAt: firebase.firestore.FieldValue.serverTimestamp() // this one is OK at doc level
+			});
+
+			localStorage.setItem('lastUnitId', docRef.id);
+			localStorage.setItem('lastUnitTitle', unitTitle);
+			statusEl.innerHTML = '<span style="color:#27ae60">Unit + Activity created!</span>';
+			} else {
+			await db.collection('modules').doc(lastUnitId).update({
+			activities: firebase.firestore.FieldValue.arrayUnion(activity)
+			});
+			statusEl.innerHTML = '<span style="color:#27ae60">Activity added!</span>';
+			}
+
+			document.getElementById('activityTitle').value = '';
+			document.getElementById('activityDesc').value = '';
+			document.getElementById('activityLink').value = '';
+
+			setTimeout(function(){statusEl.innerHTML='';}, 2000);
+			loadModules();
+			} catch(e) {
+			console.error(e);
+			statusEl.innerHTML = '<span style="color:#e74c3c">Error: ' + e.message + '</span>';
+			}
+			}
+
+			// Keep original switchTab before overriding
+			var originalSwitchTab = switchTab;
+
+			// Single switchTab handler - handles modules + map + student tracker
+			switchTab = function(tab, btn) {
+			originalSwitchTab(tab, btn);
+
+			// Load modules when Modules tab opens
+			if(tab === 'modules') {
+			setTimeout(loadModules, 200);
+			}
+
+			// Init map + auto GPS + student tracker when Map tab opens
+			if(tab === 'map') {
+			setTimeout(() => {
+			initMap();
+			setTimeout(refreshLocation, 1500);
+
+			// Show student tracker card for admin/instructor only
+			const role = localStorage.getItem('role');
+			const trackerCard = document.getElementById('studentTrackerCard');
+			if(trackerCard && (role === 'admin' || role === 'instructor')) {
+			trackerCard.style.display = 'block';
+			setTimeout(trackStudents, 1000);
+			}
+			}, 100);
+			}
+			}
+
+			// Updated trackStudents with marker cleanup
+			function trackStudents() {
+			const role = localStorage.getItem('role');
+			if(role!== 'admin' && role!== 'instructor') return;
+
+			const listDiv = document.getElementById('studentList');
+			if(!listDiv) return;
+			listDiv.innerHTML = 'Loading...';
+
+			// Clear old markers
+			if(window.studentMarkers) {
+			window.studentMarkers.forEach(m => window.map.removeLayer(m));
+			}
+			window.studentMarkers = [];
+
+			db.collection('student_locations').get().then(snapshot => {
+			if(snapshot.empty) {
+			listDiv.innerHTML = '<p style="opacity:0.6">No students online yet</p>';
+			return;
+			}
+
+			let html = '';
+			let bounds = [];
+			const now = Date.now();
+
+			snapshot.forEach(doc => {
+			const s = doc.data();
+			if(s.lat && s.lng) {
+			bounds.push([s.lat, s.lng]);
+			const minsAgo = s.lastUpdate ? Math.floor((now - s.lastUpdate.toMillis()) / 60000) : 0;
+
+
+			if(window.map && L) {
+			const marker = L.marker([s.lat, s.lng]).addTo(window.map)
+			.bindPopup('<b>' + s.userName + '</b><br>' + minsAgo + ' min ago');
+			window.studentMarkers.push(marker);
+			}
+			}
+			});
+
+			listDiv.innerHTML = html;
+			if(bounds.length > 0 && window.map) {
+			window.map.fitBounds(bounds, {padding: [50, 50]});
+			}
+			}).catch(err => {
+			listDiv.innerHTML = '<p style="color:red">Error: ' + err.message + '</p>';
+			});
+			}
+			function saveStudentLocation() {
+			const userId = localStorage.getItem('userId');
+			const userName = localStorage.getItem('userName');
+			const role = localStorage.getItem('role');
+			if(role !== 'student') return;
+
+			if(!navigator.geolocation) return;
+
+			navigator.geolocation.getCurrentPosition(pos => {
+			db.collection('student_locations').doc(userId).set({
+			userId: userId,
+			userName: userName,
+			lat: pos.coords.latitude,
+			lng: pos.coords.longitude,
+			lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
+			});
+			}, err => console.log('GPS error:', err.message));
+			}
+			// Update switchRole to show/hide campus fields
+			function switchRole(role, btn) { 
+			currentRole = role; 
+			btn.parentElement.querySelectorAll('.role-tab').forEach(t => t.classList.remove('active')); 
+			btn.classList.add('active'); 
+
+			const idInput = document.getElementById('signupId'); 
+			const campusDiv = document.getElementById('campusDiv');
+			const idSplit = document.getElementById('idSplit');
+
+			if(role === 'student') {
+			// Show campus + split inputs, hide single input
+			campusDiv.style.display = 'block';
+			idSplit.style.display = 'flex';
+			idInput.style.display = 'none';
+			idInput.required = false;
+			document.getElementById('yearInput').required = true;
+			document.getElementById('numInput').required = true;
+			document.getElementById('campusCode').required = true;
+			} else {
+			// Show single input for instructor/admin
+			campusDiv.style.display = 'none';
+			idSplit.style.display = 'none';
+			idInput.style.display = 'block';
+			idInput.required = true;
+			idInput.placeholder = '**-****';
+			idInput.value = '';
+			document.getElementById('yearInput').required = false;
+			document.getElementById('numInput').required = false;
+			document.getElementById('campusCode').required = false;
+			}
+			}
+
+			// Build full Student ID from parts
+			function buildStudentID() {
+			const campus = document.getElementById('campusCode').value;
+			const year = document.getElementById('yearInput').value.padStart(2, '0');
+			const num = document.getElementById('numInput').value.padStart(5, '0');
+
+			if(campus && year.length === 2 && num.length >= 1) {
+			const fullID = `TUP${campus}-${year}-${num}`;
+			document.getElementById('signupId').value = fullID;
+			} else {
+			document.getElementById('signupId').value = '';
+			}
+			}
+
+			// Auto-format + auto-build
+			document.getElementById('campusCode')?.addEventListener('change', buildStudentID);
+			document.getElementById('yearInput')?.addEventListener('input', e => {
+			let v = e.target.value.replace(/\D/g, '').slice(0,2);
+			e.target.value = v;
+			if(v.length === 2) document.getElementById('numInput').focus();
+			buildStudentID();
+			});
+			document.getElementById('numInput')?.addEventListener('input', e => {
+			let v = e.target.value.replace(/\D/g, '').slice(0,5);
+			e.target.value = v;
+			buildStudentID();
+			});
+
+			// Auto-format for instructor/admin: 020998 -> 02-0998
+			document.getElementById('signupId')?.addEventListener('input', function(e) {
+			if(currentRole !== 'student') {
+			let v = e.target.value.replace(/[^0-9]/g, '');
+			if(v.length > 2) v = v.slice(0,2) + '-' + v.slice(2,6);
+			e.target.value = v;
+			}
+			});
+			window.addEventListener('load', () => {
+			setTimeout(() => {
+			console.log('[SOS] Auto-starting listener...');
+			listenSOSAlerts();
+			}, 2000);
+			});
+			window.addEventListener('load', async () => {
+			if(document.getElementById('signupForm')) {
+			const deviceId = getDeviceId();
+			const deviceCheck = await db.collection('users').where('deviceId','==',deviceId).limit(1).get();
+			if(!deviceCheck.empty) {
+			document.getElementById('signupForm').style.opacity = '0.4';
+			document.getElementById('signupForm').style.pointerEvents = 'none';
+			alert('This device already has an account. Cannot create new account.');
+			}
+			}
+			});
+</script> 
+  </body> 
+</html>
+
+
