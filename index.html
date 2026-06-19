@@ -1036,6 +1036,7 @@ function showAnnouncementPopup(message, senderName, senderRole) {
 	  err => console.log('GPS blocked:', err.message)
 	  );
 	  }
+	  startLiveTracking();
 	  }, 2000);
 	  }
 	  } else {
@@ -1729,9 +1730,13 @@ function showAnnouncementPopup(message, senderName, senderRole) {
 
 			const role = localStorage.getItem('role');
 			const trackerCard = document.getElementById('studentTrackerCard');
+			if(window.studentTrackerRefreshInterval) clearInterval(window.studentTrackerRefreshInterval);
 			if(trackerCard && (role === 'admin' || role === 'instructor')) {
 			trackerCard.style.display = 'block';
 			setTimeout(trackStudents, 1000);
+			// Keep the list/markers fresh automatically without needing
+			// to tap "Refresh Locations" every time
+			window.studentTrackerRefreshInterval = setInterval(trackStudents, 15000);
 			}
 			}, 100);
 			}
@@ -2356,6 +2361,7 @@ function showAnnouncementPopup(message, senderName, senderRole) {
 			err => console.log('GPS blocked:', err.message) 
 			); 
 			} 
+			startLiveTracking();
 			}, 2000); 
 			} 
 			}; 
@@ -2437,6 +2443,8 @@ function showAnnouncementPopup(message, senderName, senderRole) {
 			if(userId) {
 			db.collection('users').doc(userId).update({deviceId: firebase.firestore.FieldValue.delete()});
 			}
+
+			stopLiveTracking();
 
 			localStorage.removeItem('userId'); 
 			localStorage.removeItem('role'); 
@@ -2899,9 +2907,11 @@ function showAnnouncementPopup(message, senderName, senderRole) {
 			// Show student tracker card for admin/instructor only
 			const role = localStorage.getItem('role');
 			const trackerCard = document.getElementById('studentTrackerCard');
+			if(window.studentTrackerRefreshInterval) clearInterval(window.studentTrackerRefreshInterval);
 			if(trackerCard && (role === 'admin' || role === 'instructor')) {
 			trackerCard.style.display = 'block';
 			setTimeout(trackStudents, 1000);
+			window.studentTrackerRefreshInterval = setInterval(trackStudents, 15000);
 			}
 			}, 100);
 			}
@@ -2937,17 +2947,28 @@ function showAnnouncementPopup(message, senderName, senderRole) {
 			if(s.lat && s.lng) {
 			bounds.push([s.lat, s.lng]);
 			const minsAgo = s.lastUpdate ? Math.floor((now - s.lastUpdate.toMillis()) / 60000) : 0;
+			// Tracking runs continuously while the student's app/tab is
+			// open (even minimized). If we haven't heard from them in
+			// over 2 minutes, their app was likely closed - flag as stale.
+			const isLive = minsAgo < 2;
+			const statusDot = isLive ? '#27ae60' : '#999';
+			const statusText = isLive ? 'Live' : (minsAgo + ' min ago');
 
+			html += `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #eee">
+			  <span style="width:8px;height:8px;border-radius:50%;background:${statusDot};flex-shrink:0"></span>
+			  <span style="flex:1;font-size:14px">${s.userName || s.userId}</span>
+			  <span style="font-size:12px;color:${isLive ? '#27ae60' : '#999'}">${statusText}</span>
+			</div>`;
 
 			if(window.map && L) {
 			const marker = L.marker([s.lat, s.lng]).addTo(window.map)
-			.bindPopup('<b>' + s.userName + '</b><br>' + minsAgo + ' min ago');
+			.bindPopup('<b>' + s.userName + '</b><br>' + (isLive ? 'Live' : minsAgo + ' min ago'));
 			window.studentMarkers.push(marker);
 			}
 			}
 			});
 
-			listDiv.innerHTML = html;
+			listDiv.innerHTML = html || '<p style="opacity:0.6">No students with location data</p>';
 			if(bounds.length > 0 && window.map) {
 			window.map.fitBounds(bounds, {padding: [50, 50]});
 			}
@@ -2955,24 +2976,92 @@ function showAnnouncementPopup(message, senderName, senderRole) {
 			listDiv.innerHTML = '<p style="color:red">Error: ' + err.message + '</p>';
 			});
 			}
-			function saveStudentLocation() {
-			const userId = localStorage.getItem('userId');
-			const userName = localStorage.getItem('userName');
+			// ===== LIVE STUDENT LOCATION TRACKING =====
+			// Uses watchPosition (not getCurrentPosition) so location keeps
+			// streaming continuously - on movement and at a regular interval -
+			// for as long as the browser/app keeps this page's JS running.
+			// This covers: app minimized, screen locked, switched to another tab/app.
+			// NOTE: a website (even installed to homescreen) cannot run JS after
+			// the browser/app process itself is fully closed/killed by the OS -
+			// no web API can do that. True "tracking after force-close" needs a
+			// native app with a background location service.
+			let studentWatchId = null;
+			let studentTrackingActive = false;
+
+			function startLiveTracking() {
 			const role = localStorage.getItem('role');
 			if(role !== 'student') return;
+			if(studentTrackingActive) return; // already running
+			if(!navigator.geolocation) { console.log('[LIVE] Geolocation not supported'); return; }
 
-			if(!navigator.geolocation) return;
+			studentTrackingActive = true;
+			console.log('[LIVE] Starting live location watch...');
 
-			navigator.geolocation.getCurrentPosition(pos => {
+			studentWatchId = navigator.geolocation.watchPosition(
+			pos => pushStudentLocation(pos),
+			err => {
+			console.log('[LIVE] watchPosition error:', err.message);
+			// Auto-retry after a short delay if the watch dies (some
+			// mobile browsers drop it when backgrounded for a long time)
+			studentTrackingActive = false;
+			setTimeout(startLiveTracking, 5000);
+			},
+			{ enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 }
+			);
+
+			// Safety net: also push an update on a fixed interval in case
+			// watchPosition doesn't fire (e.g. student isn't moving at all)
+			if(window.studentTrackInterval) clearInterval(window.studentTrackInterval);
+			window.studentTrackInterval = setInterval(() => {
+			if(localStorage.getItem('role') === 'student') {
+			navigator.geolocation.getCurrentPosition(pushStudentLocation, e => console.log('[LIVE] interval GPS error:', e.message));
+			}
+			}, 30000); // every 30s
+			}
+
+			function pushStudentLocation(pos) {
+			const userId = localStorage.getItem('userId');
+			const userName = localStorage.getItem('userName');
+			if(!userId) return;
 			db.collection('student_locations').doc(userId).set({
 			userId: userId,
 			userName: userName,
 			lat: pos.coords.latitude,
 			lng: pos.coords.longitude,
 			lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
-			});
-			}, err => console.log('GPS error:', err.message));
+			}).catch(e => console.log('[LIVE] save error:', e.message));
 			}
+
+			function stopLiveTracking() {
+			if(studentWatchId !== null) {
+			navigator.geolocation.clearWatch(studentWatchId);
+			studentWatchId = null;
+			}
+			if(window.studentTrackInterval) {
+			clearInterval(window.studentTrackInterval);
+			window.studentTrackInterval = null;
+			}
+			studentTrackingActive = false;
+			console.log('[LIVE] Tracking stopped');
+			}
+
+			// Keep tracking alive across minimize/background - re-assert the
+			// watch when the page becomes visible again, in case the browser
+			// silently paused it while hidden.
+			document.addEventListener('visibilitychange', () => {
+			if(document.visibilityState === 'visible') {
+			console.log('[LIVE] App foregrounded, ensuring tracking is active');
+			if(localStorage.getItem('role') === 'student') startLiveTracking();
+			} else {
+			console.log('[LIVE] App backgrounded/minimized - watch continues running');
+			}
+			});
+
+			// Kept for backward compatibility with existing onclick="saveStudentLocation()" calls
+			function saveStudentLocation() {
+			startLiveTracking();
+			}
+			// ===== END LIVE STUDENT LOCATION TRACKING =====
 			// Update switchRole to show/hide campus fields
 			function switchRole(role, btn) { 
 			currentRole = role; 
