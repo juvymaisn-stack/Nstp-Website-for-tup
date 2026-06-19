@@ -461,7 +461,7 @@ location-card {
 	  <!-- Upload form - admin/instructor only -->
 	  <div id="uploadCard" style="background:white; border-radius:12px; padding:16px; margin-bottom:16px; display:none">
 		<h3 style="margin-top:0; color:#1a4d47"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a4d47" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px;flex-shrink:0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Upload New Unit</h3>
-		<p style="font-size:13px; color:#666; margin-bottom:12px">1. Upload PDF to Google Drive ÃÂ¢ 2. Set "Anyone with link: Viewer" ÃÂ¢ 3. Paste share link here</p>
+		<p style="font-size:13px; color:#666; margin-bottom:12px">1. Upload PDF to Google Drive ÃÃÂ¢ 2. Set "Anyone with link: Viewer" ÃÃÂ¢ 3. Paste share link here</p>
 		<input type="text" id="unitTitle" placeholder="Unit Title e.g. Module 3: Flood Safety" style="width:100%; padding:10px; margin-bottom:8px; border:1px solid #ddd; border-radius:8px">
 		<textarea id="unitDesc" placeholder="Description" rows="2" style="width:100%; padding:10px; margin-bottom:8px; border:1px solid #ddd; border-radius:8px"></textarea>
 		<input type="text" id="unitLink" placeholder="Paste Google Drive Share Link" style="width:100%; padding:10px; margin-bottom:12px; border:1px solid #ddd; border-radius:8px">
@@ -1122,7 +1122,7 @@ function showAnnouncementPopup(message, senderName, senderRole) {
 	  window.map = L.map('map').setView([userLat, userLng], 14);
 
 	  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-	  attribution: 'ÃÃÃÂ© OpenStreetMap'
+	  attribution: 'ÃÃÃÃÂ© OpenStreetMap'
 	  }).addTo(window.map);
 
 	  let myLocationMarker; // track the marker so we don't spam pins
@@ -1232,7 +1232,7 @@ function showAnnouncementPopup(message, senderName, senderRole) {
 	  },
 	  err => {
       if(err.code === 1) {
-	  locText.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;flex-shrink:0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Location blocked<br><small style="color:#e74c3c">Tap lock icon ÃÂ¢ Site settings ÃÂ¢ Location: Allow</small><br><small style="cursor:pointer; color:#1a4d47" onclick="location.reload()">Tap to reload</small>';
+	  locText.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;flex-shrink:0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Location blocked<br><small style="color:#e74c3c">Tap lock icon ÃÃÂ¢ Site settings ÃÃÂ¢ Location: Allow</small><br><small style="cursor:pointer; color:#1a4d47" onclick="location.reload()">Tap to reload</small>';
       } else {
 	  locText.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;flex-shrink:0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>GPS error<br><small style="color:#e74c3c">Turn on location/GPS</small>';
       }
@@ -1352,7 +1352,7 @@ function showAnnouncementPopup(message, senderName, senderRole) {
       statusEl.innerHTML = 'Error: ' + err.message;
 	  }
 	  } else {
-	  // No pin tapped ÃÂ¢ fall back to live GPS
+	  // No pin tapped ÃÃÂ¢ fall back to live GPS
 	  navigator.geolocation.getCurrentPosition(async pos => {
       try {
 	  const lat = pos.coords.latitude;
@@ -1489,7 +1489,7 @@ function showAnnouncementPopup(message, senderName, senderRole) {
 
 	  // Tab content
 	  const tabData = {
-	  map: `<div class="card static" style="cursor:default"><h3>Community Map</h3><p>View hazard zones and safe routes</p><div id="map"></div></div><div id="studentTrackerCard" class="card static" style="display:none;cursor:default"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><div><h3 style="margin-bottom:2px">Locations</h3><p style="font-size:13px; color:#666; margin:0">Live GPS</p></div><button onclick="trackStudents()" style="background:#1a4d47;color:white;border:none;padding:9px 16px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">Refresh</button></div><div id="studentList" style="max-height:250px; overflow-y:auto"></div></div><div class="card" onclick="refreshLocation()" style="cursor:pointer"><h3>
+	  map: `<div class="card static" style="cursor:default"><h3>Community Map</h3><p>View hazard zones and safe routes</p><div id="map"></div></div><div id="studentTrackerCard" class="card static" style="display:none;cursor:default"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><div><h3 style="margin-bottom:2px">Locations</h3><p style="font-size:13px; color:#666; margin:0">Live GPS</p></div><button onclick="trackStudents()" style="background:#1a4d47;color:white;border:none;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;display:flex;align-items:center;gap:5px;line-height:1"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>Refresh</button></div><div id="studentList" style="max-height:250px; overflow-y:auto"></div></div><div class="card" onclick="refreshLocation()" style="cursor:pointer"><h3>
 		  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a4d47" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px">
 			<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
 			<circle cx="12" cy="10" r="3"/>
@@ -1509,17 +1509,17 @@ function showAnnouncementPopup(message, senderName, senderRole) {
 
 		<select id="hazardType" style="width:100%;padding:14px 16px;border:1px solid #d0d0d0;border-radius:12px;background:#fff;font-size:16px;margin-bottom:12px;font-family:inherit">
 		  <option value="">Select hazard type</option>
-		  <option value="Flood">ÃÂ° Flood</option>
-		  <option value="Fire">ÃÂ°ÃÂ¥ Fire</option>
-		  <option value="Earthquake">ÃÂ°ÃÂ¯ÃÂ¸ Earthquake Damage</option>
-		  <option value="Landslide">ÃÂ¢ÃÂ°ÃÂ¯ÃÂ¸ Landslide</option>
-		  <option value="Other">ÃÂ¢ÃÂ ÃÂ¯ÃÂ¸ Other</option>
+		  <option value="Flood">ÃÃÂ° Flood</option>
+		  <option value="Fire">ÃÃÂ°ÃÃÂ¥ Fire</option>
+		  <option value="Earthquake">ÃÃÂ°ÃÃÂ¯ÃÃÂ¸ Earthquake Damage</option>
+		  <option value="Landslide">ÃÃÂ¢ÃÃÂ°ÃÃÂ¯ÃÃÂ¸ Landslide</option>
+		  <option value="Other">ÃÃÂ¢ÃÃÂ ÃÃÂ¯ÃÃÂ¸ Other</option>
 		</select>
 
 		<textarea id="hazardDesc" placeholder="Describe the hazard..." rows="3" style="width:100%;padding:14px 16px;border:1px solid #d0d0d0;border-radius:12px;background:#fff;font-size:16px;margin-bottom:12px;font-family:inherit;resize:vertical;box-sizing:border-box"></textarea>
 
 		<div id="hazardLocationText" style="font-size:13px;color:#555;background:#f0f8f5;border:1px solid #c8e6c9;padding:10px 14px;border-radius:10px;margin-bottom:12px">
-		  ÃÂ° Tap the map above to pin a location, or your GPS will be used
+		  ÃÃÂ° Tap the map above to pin a location, or your GPS will be used
 		</div>
 
 		<div id="hazardStatus" style="font-size:13px;color:#27ae60;margin-bottom:12px;min-height:18px"></div>
@@ -1994,7 +1994,7 @@ function showAnnouncementPopup(message, senderName, senderRole) {
 
 			hazardReportMap = L.map('hazardReportMap').setView([startLat, startLng], 15);
 			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-			attribution: 'ÃÃÂ© OpenStreetMap'
+			attribution: 'ÃÃÃÂ© OpenStreetMap'
 			}).addTo(hazardReportMap);
 
 			// Try to center on user GPS
@@ -2027,10 +2027,10 @@ function showAnnouncementPopup(message, senderName, senderRole) {
 			window.tapLng = lng;
 			window.tapAddress = address;
 
-			hazardReportPin.setPopupContent('<b>ÃÂ° Hazard here</b><br><small>' + address + '</small>').openPopup();
+			hazardReportPin.setPopupContent('<b>ÃÃÂ° Hazard here</b><br><small>' + address + '</small>').openPopup();
 
 			const locEl = document.getElementById('hazardLocationText');
-			if(locEl) locEl.innerHTML = 'ÃÂ° <b>Pinned:</b> ' + address;
+			if(locEl) locEl.innerHTML = 'ÃÃÂ° <b>Pinned:</b> ' + address;
 			});
 			}
 
@@ -2063,10 +2063,10 @@ function showAnnouncementPopup(message, senderName, senderRole) {
 			});
 
 			statusEl.style.color = '#27ae60';
-			statusEl.innerHTML = 'ÃÂ¢ Hazard reported successfully!';
+			statusEl.innerHTML = 'ÃÃÂ¢ Hazard reported successfully!';
 			document.getElementById('hazardType').value = '';
 			document.getElementById('hazardDesc').value = '';
-			document.getElementById('hazardLocationText').innerHTML = 'ÃÂ° Tap the map above to pin a location, or your GPS will be used';
+			document.getElementById('hazardLocationText').innerHTML = 'ÃÃÂ° Tap the map above to pin a location, or your GPS will be used';
 			window.tapLat = null; window.tapLng = null; window.tapAddress = null;
 			if(hazardReportPin && hazardReportMap) { hazardReportMap.removeLayer(hazardReportPin); hazardReportPin = null; }
 			setTimeout(() => { statusEl.innerHTML = ''; loadMyHazards(); }, 1500);
@@ -2076,7 +2076,7 @@ function showAnnouncementPopup(message, senderName, senderRole) {
 			}
 			}, () => {
 			statusEl.style.color = '#e74c3c';
-			statusEl.innerHTML = 'ÃÂ¢ GPS unavailable ÃÂ¢ please enable location access';
+			statusEl.innerHTML = 'ÃÃÂ¢ GPS unavailable ÃÃÂ¢ please enable location access';
 			}, { enableHighAccuracy: true, timeout: 10000 });
 			}
 
@@ -2721,12 +2721,12 @@ function showAnnouncementPopup(message, senderName, senderRole) {
 				  <span style="background:${statusColor}; color:white; padding:3px 8px; border-radius:8px; font-size:11px">${status}</span>
 				  ${status==='pending'?`<button onclick="confirmHazardReport('${doc.id}')" style="padding:3px 8px;border:none;background:#27ae60;color:white;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer">Confirm</button>`:''}
 				</div>
-				<button onclick="openMap(${h.lat}, ${h.lng})" style="padding:5px 10px; border:none; background:#3498db; color:white; border-radius:8px; font-size:12px; font-weight:600; white-space:nowrap; flex-shrink:0">ÃÂ° Map</button>
+				<button onclick="openMap(${h.lat}, ${h.lng})" style="padding:5px 10px; border:none; background:#3498db; color:white; border-radius:8px; font-size:12px; font-weight:600; white-space:nowrap; flex-shrink:0">ÃÃÂ° Map</button>
 			  </div>
 			  <div style="font-size:13px; color:#333; margin-bottom:4px; line-height:1.4">${h.address || 'No address'}</div>
 			  ${h.description ? `<div style="font-size:12px; color:#666; margin-bottom:4px; font-style:italic">"${h.description}"</div>` : ''}
 			  <div style="display:flex; justify-content:space-between; font-size:11px; color:#999; margin-top:4px">
-				<span>ÃÂ°ÃÂ¤ ${reporter}</span>
+				<span>ÃÃÂ°ÃÃÂ¤ ${reporter}</span>
 				<span>${time}</span>
 			  </div>
 			</div>
@@ -3160,6 +3160,7 @@ function showAnnouncementPopup(message, senderName, senderRole) {
 </script> 
   </body> 
 </html>
+
 
 
 
