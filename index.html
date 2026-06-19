@@ -1011,7 +1011,37 @@ function showAnnouncementPopup(message, senderName, senderRole) {
 	  }
 	  } 
 
-	  setTimeout(() => showScreen('auth'), 2000);
+	  // PERSISTENT LOGIN: if a session already exists in localStorage,
+	  // skip the login screen entirely and go straight to the dashboard.
+	  // localStorage survives page refreshes, browser/app restarts, and
+	  // closing the tab/app completely - the user only sees the login
+	  // screen again after they explicitly tap Logout.
+	  setTimeout(() => {
+	  const savedUserId = localStorage.getItem('userId');
+	  const savedRole = localStorage.getItem('role');
+	  const savedUserName = localStorage.getItem('userName');
+
+	  if(savedUserId && savedRole) {
+	  console.log('[SESSION] Restoring saved session for:', savedUserId);
+	  const headerEl = document.querySelector('.dashboard-header h2');
+	  if(headerEl) headerEl.textContent = `Welcome, ${savedUserName || savedUserId}`;
+	  showScreen('dashboard');
+	  setTimeout(listenAnnouncements, 1000);
+
+	  if(savedRole === 'student') {
+	  setTimeout(() => {
+	  if(navigator.geolocation) {
+	  navigator.geolocation.getCurrentPosition(
+	  pos => console.log('GPS OK:', pos.coords.latitude, pos.coords.longitude),
+	  err => console.log('GPS blocked:', err.message)
+	  );
+	  }
+	  }, 2000);
+	  }
+	  } else {
+	  showScreen('auth');
+	  }
+	  }, 2000);
 
 	  function switchRole(role, btn) {
 	  currentRole = role;
