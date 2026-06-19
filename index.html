@@ -2469,9 +2469,7 @@ function showAnnouncementPopup(message, senderName, senderRole) {
 			console.log('[SOS] Showing banner for:', senderName);
 			showSOSBanner({...alert, senderName, senderId, address, lat, lng}, change.doc.id); 
 
-			try {
-            new Audio('https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg').play(); 
-			} catch(e) {}
+			playSOSSound();
 			} 
 			}); 
 			}, err => {
@@ -2479,6 +2477,53 @@ function showAnnouncementPopup(message, senderName, senderRole) {
 			alert('Firestore error: ' + err.message);
 			}); 
 			}
+
+			// ===== SOS SOUND =====
+			const SOS_SOUND_URL = 'https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg';
+			let sosAudioUnlocked = false;
+			let sosAudioEl = null;
+
+			// Mobile browsers block audio.play() unless it happens inside a user gesture.
+			// This "unlocks" audio the first time the user taps anywhere in the app,
+			// so that later, unattended SOS alerts are allowed to play sound.
+			function unlockSOSAudio() {
+			if(sosAudioUnlocked) return;
+			sosAudioUnlocked = true;
+			try {
+			sosAudioEl = new Audio(SOS_SOUND_URL);
+			sosAudioEl.volume = 0; // silent priming play, just to unlock
+			sosAudioEl.play().then(() => {
+			sosAudioEl.pause();
+			sosAudioEl.currentTime = 0;
+			sosAudioEl.volume = 1;
+			console.log('[SOS] Audio unlocked');
+			}).catch(e => console.warn('[SOS] Audio unlock failed:', e.message));
+			} catch(e) {
+			console.warn('[SOS] Audio unlock error:', e.message);
+			}
+			}
+			document.addEventListener('click', unlockSOSAudio, { once: true });
+			document.addEventListener('touchstart', unlockSOSAudio, { once: true });
+
+			function playSOSSound() {
+			try {
+			const audio = new Audio(SOS_SOUND_URL);
+			audio.loop = true;
+			const playPromise = audio.play();
+			if(playPromise && playPromise.catch) {
+			playPromise.catch(err => {
+			console.warn('[SOS] Sound blocked by browser autoplay policy:', err.message);
+			});
+			}
+			// Stop the alarm automatically after 15s so it doesn't loop forever
+			// if the user never taps Acknowledge.
+			setTimeout(() => { try { audio.pause(); } catch(e) {} }, 15000);
+			window.currentSOSAudio = audio;
+			} catch(e) {
+			console.warn('[SOS] playSOSSound error:', e.message);
+			}
+			}
+			// ===== END SOS SOUND =====
 
 			function showSOSBanner(alert, docId) { 
 			// Remove old banner first
@@ -2515,6 +2560,7 @@ function showAnnouncementPopup(message, senderName, senderRole) {
 			async function acknowledgeSOS(docId) {
 			await db.collection('sos_alerts').doc(docId).update({status: 'acknowledged'});
 			document.getElementById('sos-banner-' + docId).remove();
+			if(window.currentSOSAudio) { try { window.currentSOSAudio.pause(); } catch(e) {} }
 			}
 
 			function openMap(lat, lng) {
